@@ -25,22 +25,16 @@ export default function Login({ onLogin }) {
   }
 
   const pick = (m) => { setMode(m); setU(''); setPw(''); setErr(''); };
-
   return (
     <form className="center card" onSubmit={go}>
-      <div className="brand">
-        <img src="https://aws-codeathon-at-gist-site.vercel.app/assets/aws-logo.png" alt="AWS" />
-        <span className="ribbon" style={{ margin: 0 }}>AWS CLUB | GIST</span>
-      </div>
-      <h1><span className="hl">AWS Codeathon</span> 2K26</h1>
-      <p className="tagline">Learn | Build | Innovate on the cloud</p>
+      <h1>Proctor Tool</h1>
       <div className="tabs">
         <button type="button" className={isP ? 'on' : ''} onClick={() => pick('p')}>Participant</button>
         <button type="button" className={!isP ? 'on' : ''} onClick={() => pick('a')}>Admin</button>
       </div>
       <div className="row"><input value={u} onChange={(e) => setU(e.target.value)} type={isP ? 'email' : 'text'} autoComplete="username" placeholder={isP ? 'Email' : 'Admin username'} required /></div>
       <div className="row"><input value={pw} onChange={(e) => setPw(e.target.value)} type="password" autoComplete="current-password" placeholder={isP ? 'Roll number' : 'Password'} required /></div>
-      <button type="submit" style={{ width: '100%' }} disabled={busy}>{busy ? (queued ? 'Server is busy – you are in the queue…' : 'Signing in…') : 'Sign in →'}</button>
+      <button type="submit" style={{ width: '100%' }} disabled={busy}>{busy ? (queued ? 'Server is busy – you are in the queue…' : 'Signing in…') : 'Sign in'}</button>
       {queued && <p className="mu">Lots of students are signing in. Please keep this page open – we will retry automatically.</p>}
       <p className="err">{err}</p>
     </form>

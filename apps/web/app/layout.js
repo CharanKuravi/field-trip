@@ -1,8 +1,17 @@
 import './globals.css';
 
-export const metadata = { title: 'Proctor Tool', description: 'Proctored online exam' };
-export const viewport = { width: 'device-width', initialScale: 1 };
+export const metadata = { title: 'AWS Codeathon 2K26', description: 'AWS Club GIST · Learn | Build | Innovate on the cloud' };
+export const viewport = { width: 'device-width', initialScale: 1, themeColor: '#ff8a1f' };
 
 export default function RootLayout({ children }) {
-  return (<html lang="en"><body>{children}</body></html>);
+  return (
+    <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Caveat:wght@700&family=Nunito:wght@400;600;800&display=swap" rel="stylesheet" />
+      </head>
+      <body>{children}</body>
+    </html>
+  );
 }

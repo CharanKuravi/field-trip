@@ -39,7 +39,7 @@ export default function Participant({ onLogout }) {
     const r = me.result;
     return (
       <div className="center card">
-        <h1><span className="hl">Exam submitted</span></h1>
+        <h1>Exam submitted</h1>
         <p style={{ fontSize: 28, margin: '8px 0' }}><b>{r.score} / {r.total}</b></p>
         <p className={r.passed ? 'ok' : 'err'}>{r.passed ? 'Passed' : 'Did not meet pass mark'}</p>
         <p className="mu">Violations recorded: {r.violations}{r.auto_submitted ? ' · auto-submitted' : ''}</p>
@@ -49,22 +49,21 @@ export default function Participant({ onLogout }) {
   }
 
   return (
-    <div className="center card" style={{ maxWidth: 600 }}>
-      <span className="ribbon">AWS CLUB | GIST</span>
-      <h1><span className="hl">{me.hackathon}</span></h1>
+    <div className="center card" style={{ maxWidth: 560 }}>
+      <h1>{me.hackathon}</h1>
       <p className="mu">{me.name} · <span className="mono">{me.pid}</span></p>
       <p><b>{me.questions}</b> questions · <b>{me.duration_minutes}</b> minutes</p>
-      <ul className="steps">
-        <li><span>The exam runs in <b>fullscreen</b>. Leaving fullscreen, switching tabs or windows, or losing focus is recorded as a violation.</span></li>
-        <li><span>Right-click, copy, cut and paste are blocked. <b>Every attempt is recorded as a violation.</b></span></li>
-        <li><span><b>{me.max_violations || '∞'} violations</b> = automatic submission.</span></li>
-        <li><span>The timer is controlled by the server. Refreshing will not reset it.</span></li>
+      <ul>
+        <li>The exam runs in <b>fullscreen</b>. Leaving fullscreen, switching tabs or windows, or losing focus is recorded as a violation.</li>
+        <li>Right-click, copy, paste and common shortcuts are disabled.</li>
+        <li><b>{me.max_violations || '∞'} violations</b> = automatic submission.</li>
+        <li>The timer is controlled by the server. Refreshing will not reset it.</li>
       </ul>
       {!me.is_open && <p className="err">This exam is not open yet. Keep this page open – it unlocks automatically.</p>}
       <button style={{ width: '100%' }} disabled={!me.is_open || starting} onClick={begin}>
-        {starting ? 'Starting…' : me.status === 'in_progress' ? 'Resume exam →' : 'Enter fullscreen & begin →'}
+        {starting ? 'Starting…' : me.status === 'in_progress' ? 'Resume exam' : 'Enter fullscreen & begin'}
       </button>
-      <button className="sec" style={{ width: '100%', marginTop: 10 }} onClick={onLogout}>Logout</button>
+      <button className="sec" style={{ width: '100%', marginTop: 8 }} onClick={onLogout}>Logout</button>
       <p className="err">{err}</p>
     </div>
   );
