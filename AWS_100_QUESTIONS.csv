@@ -1,0 +1,101 @@
+question,a,b,c,d,correct,marks
+What is AWS?,Cloud Computing Platform,Database Only,Operating System,Web Browser,A,1
+Which AWS service is used for object storage?,EC2,S3,Lambda,RDS,B,1
+What does EC2 stand for?,Elastic Cloud Compute,Elastic Compute Cloud,Easy Cloud Computing,Elastic Container Cloud,B,1
+Which service is used for serverless computing?,EC2,S3,Lambda,CloudFront,C,1
+What is the default region for AWS?,us-east-1,us-west-1,eu-west-1,ap-south-1,A,1
+Which service provides DNS?,CloudFront,Route 53,S3,VPC,B,1
+What is AWS IAM used for?,Storage,Identity and Access Management,Database,Networking,B,1
+Which database is NoSQL?,RDS,Aurora,DynamoDB,Redshift,C,1
+What is CloudFormation?,Monitoring Tool,Infrastructure as Code,Container Service,CDN Service,B,1
+Which service delivers content globally?,S3,CloudFront,EC2,Lambda,B,1
+What is VPC?,Virtual Private Cloud,Very Private Connection,Virtual Public Cloud,Variable Private Cloud,A,1
+Which service is for container orchestration?,Lambda,ECS,S3,RDS,B,1
+What is Amazon Aurora?,NoSQL Database,Object Storage,Relational Database,Cache Service,C,1
+Which service monitors AWS resources?,CloudWatch,CloudTrail,Config,Inspector,A,1
+What is AWS Amplify used for?,Mobile and Web App Development,Database Management,Server Management,Networking,A,1
+Which service provides message queuing?,SNS,SQS,SES,Kinesis,B,1
+What is Amazon Redshift?,Data Warehouse,Object Storage,Cache,CDN,A,1
+Which service is for continuous integration?,CodeCommit,CodePipeline,CodeBuild,All of the above,D,1
+What is AWS Glue?,ETL Service,Database,Storage,Networking,A,1
+Which service provides real-time data streaming?,Kinesis,SQS,SNS,Lambda,A,1
+What is Amazon Athena?,Query Service for S3,Database,Storage,CDN,A,1
+Which service is for machine learning?,SageMaker,Rekognition,Comprehend,All of the above,D,1
+What is AWS Step Functions?,Workflow Orchestration,Storage,Database,Networking,A,1
+Which service provides API management?,API Gateway,Lambda,EC2,S3,A,1
+What is AWS Cognito?,User Authentication,Storage,Database,CDN,A,1
+Which service is for cost management?,Cost Explorer,CloudWatch,Config,Inspector,A,1
+What is Amazon EFS?,Elastic File System,Elastic Function Service,Easy File Storage,Elastic Form Service,A,1
+Which service provides pub/sub messaging?,SNS,SQS,SES,Kinesis,A,1
+What is AWS X-Ray?,Distributed Tracing,Storage,Database,CDN,A,1
+Which service is for blockchain?,Managed Blockchain,DynamoDB,RDS,S3,A,1
+What is Amazon Elastic Beanstalk?,PaaS Platform,Storage Service,Database,Monitoring Tool,A,1
+Which service provides SSL certificates?,Certificate Manager,IAM,KMS,CloudFront,A,1
+What is AWS Secrets Manager?,Secure Credential Storage,Database,File Storage,CDN,A,1
+Which service is for batch processing?,Batch,Lambda,EC2,ECS,A,1
+What is Amazon Lightsail?,VPS Service,Database,Storage,CDN,A,1
+Which service provides managed Kubernetes?,EKS,ECS,Fargate,Lambda,A,1
+What is AWS AppSync?,GraphQL Service,REST API,Database,Storage,A,1
+Which service is for IoT?,IoT Core,Lambda,S3,DynamoDB,A,1
+What is Amazon MQ?,Managed Message Broker,Database,Storage,CDN,A,1
+Which service provides email sending?,SES,SNS,SQS,Kinesis,A,1
+What is AWS Direct Connect?,Dedicated Network Connection,VPN,CDN,Load Balancer,A,1
+Which service is for disaster recovery?,Backup,S3,EBS,Glacier,A,1
+What is Amazon Neptune?,Graph Database,Relational Database,NoSQL Database,Cache,A,1
+Which service provides search functionality?,OpenSearch,RDS,DynamoDB,Redshift,A,1
+What is AWS Transit Gateway?,Network Hub,Load Balancer,CDN,VPN,A,1
+Which service is for video processing?,Elastic Transcoder,Lambda,EC2,S3,A,1
+What is Amazon Macie?,Data Security Service,Database,Storage,CDN,A,1
+Which service provides WAF?,WAF & Shield,CloudFront,API Gateway,ALB,A,1
+What is AWS Organizations?,Multi-Account Management,IAM,VPC,Direct Connect,A,1
+Which service is for quantum computing?,Braket,SageMaker,Lambda,EC2,A,1
+What is Amazon Detective?,Security Investigation,GuardDuty,Macie,Inspector,A,1
+Which service provides DDoS protection?,Shield,WAF,CloudFront,Route 53,A,1
+What is AWS Control Tower?,Landing Zone Setup,Organizations,IAM,VPC,A,1
+Which service is for satellite data?,Ground Station,S3,EC2,Lambda,A,1
+What is Amazon Timestream?,Time Series Database,RDS,DynamoDB,Redshift,A,1
+Which service provides edge computing?,Wavelength,CloudFront,Lambda@Edge,EC2,A,1
+What is AWS Outposts?,On-Premises AWS,VPC,Direct Connect,VPN,A,1
+Which service is for data migration?,DataSync,S3,Snowball,All of the above,D,1
+What is Amazon Kendra?,Enterprise Search,OpenSearch,Athena,Redshift,A,1
+Which service provides code deployment?,CodeDeploy,CodeBuild,CodePipeline,CodeCommit,A,1
+What is AWS CloudShell?,Browser-Based CLI,EC2,Lambda,Container,A,1
+Which service is for app testing?,Device Farm,Lambda,EC2,CodeBuild,A,1
+What is Amazon Personalize?,ML Recommendations,SageMaker,Comprehend,Rekognition,A,1
+Which service provides fraud detection?,Fraud Detector,Macie,GuardDuty,Inspector,A,1
+What is AWS Lake Formation?,Data Lake Setup,S3,Glue,Athena,A,1
+Which service is for contact center?,Connect,Chime,WorkSpaces,AppStream,A,1
+What is Amazon Textract?,Document Analysis,Rekognition,Comprehend,Transcribe,A,1
+Which service provides video conferencing?,Chime,Connect,WorkSpaces,AppStream,A,1
+What is AWS Proton?,Service Templates,CloudFormation,SAM,CDK,A,1
+Which service is for 5G?,Wavelength,Direct Connect,VPN,CloudFront,A,1
+What is Amazon HealthLake?,Healthcare Data Store,RDS,DynamoDB,S3,A,1
+Which service provides AR/VR?,Sumerian,Lambda,EC2,S3,A,1
+What is AWS Panorama?,Computer Vision,Rekognition,Lambda,EC2,A,1
+Which service is for robotics?,RoboMaker,Lambda,EC2,IoT Core,A,1
+What is Amazon Monitron?,Equipment Monitoring,CloudWatch,IoT Core,Lambda,A,1
+Which service provides genomics?,HealthOmics,S3,Lambda,EC2,A,1
+What is AWS Wickr?,Secure Communication,Chime,Connect,WorkSpaces,A,1
+Which service is for supply chain?,Supply Chain,Lambda,S3,DynamoDB,A,1
+What is Amazon CodeWhisperer?,AI Code Suggestions,CodeBuild,CodeCommit,Lambda,A,1
+Which service provides clean rooms?,Clean Rooms,S3,Glue,Athena,A,1
+What is AWS SimSpace Weaver?,Spatial Simulations,Lambda,EC2,Batch,A,1
+What is the maximum size of S3 object?,5TB,5GB,100GB,1TB,A,1
+Which service auto-scales EC2?,Auto Scaling,Lambda,ECS,CloudWatch,A,1
+What is Amazon EMR?,Big Data Processing,Redshift,Athena,Glue,A,1
+Which service provides DNS failover?,Route 53,CloudFront,ELB,API Gateway,A,1
+What is AWS Fargate?,Serverless Containers,ECS,EKS,Lambda,A,1
+Which service encrypts data at rest?,KMS,IAM,Secrets Manager,Certificate Manager,A,1
+What is Amazon QuickSight?,Business Intelligence,Redshift,Athena,S3,A,1
+Which service provides network isolation?,VPC,Direct Connect,VPN,Transit Gateway,A,1
+What is AWS DataZone?,Data Management,Lake Formation,Glue,S3,A,1
+Which service is for mainframe migration?,Mainframe Modernization,EC2,Lambda,ECS,A,1
+What is Amazon Omics?,Biological Data,S3,DynamoDB,RDS,A,1
+Which service provides security hub?,Security Hub,GuardDuty,Macie,Inspector,A,1
+What is AWS Verified Access?,Zero Trust Access,IAM,Cognito,VPC,A,1
+Which service monitors network traffic?,VPC Flow Logs,CloudWatch,CloudTrail,Config,A,1
+What is Amazon AppFlow?,SaaS Integration,Lambda,API Gateway,EventBridge,A,1
+Which service provides game servers?,GameLift,EC2,Lambda,ECS,A,1
+What is AWS Audit Manager?,Compliance Auditing,Config,CloudTrail,Security Hub,A,1
+Which service is for document database?,DocumentDB,DynamoDB,RDS,Redshift,A,1
+What is Amazon Managed Service for Prometheus?,Monitoring & Alerting,CloudWatch,X-Ray,Systems Manager,A,1

@@ -159,11 +159,20 @@ function Participants({ h }) {
   const [q, setQ] = useState('');
   const dq = useDebounced(q);
   const [d, setD] = useState(null);
+  const [selected, setSelected] = useState(new Set());
+  const [allParticipants, setAllParticipants] = useState([]);
+  const [duplicates, setDuplicates] = useState([]);
   const file = useRef(null);
 
   useEffect(() => { setPage(1); }, [dq]);
   const load = useCallback(async () => {
-    try { setD(await api(`/admin/hackathons/${h.id}/participants?page=${page}&q=${encodeURIComponent(dq)}`)); }
+    try { 
+      setD(await api(`/admin/hackathons/${h.id}/participants?page=${page}&q=${encodeURIComponent(dq)}`));
+      // Load all participants for duplicate detection
+      const allPages = await api(`/admin/hackathons/${h.id}/participants?per=10000`);
+      setAllParticipants(allPages.items || []);
+      setSelected(new Set());
+    }
     catch (e) { setMsg({ bad: true, text: e.message }); }
   }, [h.id, page, dq]);
   useEffect(() => { load(); }, [load]);
@@ -194,6 +203,77 @@ function Participants({ h }) {
     try { await api(`/admin/participants/${encodeURIComponent(p.id)}`, { method: 'DELETE', retries: 0 }); load(); } catch (e) { say(e.message, true); }
   }
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  
+  const toggleSelect = (id) => {
+    const newSet = new Set(selected);
+    if (newSet.has(id)) newSet.delete(id); else newSet.add(id);
+    setSelected(newSet);
+  };
+  
+  const selectAll = () => setSelected(new Set((d?.items || []).map(p => p.id)));
+  const deselectAll = () => setSelected(new Set());
+  
+  async function deleteSelected() {
+    if (selected.size === 0) { say('No participants selected', true); return; }
+    if (!confirm(`Delete ${selected.size} selected participant(s) and their data?`)) return;
+    say(`Deleting ${selected.size} participant(s)...`);
+    let deleted = 0, failed = 0;
+    for (const id of selected) {
+      try { await api(`/admin/participants/${encodeURIComponent(id)}`, { method: 'DELETE', retries: 0 }); deleted++; }
+      catch { failed++; }
+    }
+    say(`${deleted} deleted${failed ? ` · ${failed} failed` : ''}`, failed > 0);
+    load();
+  }
+  
+  function findDuplicates() {
+    const emailMap = new Map();
+    const nameMap = new Map();
+    const dups = [];
+    
+    allParticipants.forEach(p => {
+      const email = p.email.toLowerCase();
+      const name = p.name.toLowerCase().replace(/\s+/g, ' ').trim();
+      
+      if (emailMap.has(email)) {
+        const existing = emailMap.get(email);
+        if (!dups.find(d => d.type === 'email' && d.items.includes(existing))) {
+          dups.push({ type: 'email', key: email, items: [existing, p] });
+        } else {
+          dups.find(d => d.type === 'email' && d.items.includes(existing)).items.push(p);
+        }
+      } else {
+        emailMap.set(email, p);
+      }
+      
+      if (name && name.length > 2) {
+        if (nameMap.has(name)) {
+          const existing = nameMap.get(name);
+          if (!dups.find(d => d.type === 'name' && d.items.includes(existing))) {
+            dups.push({ type: 'name', key: name, items: [existing, p] });
+          } else {
+            const group = dups.find(d => d.type === 'name' && d.items.includes(existing));
+            if (!group.items.find(i => i.id === p.id)) group.items.push(p);
+          }
+        } else {
+          nameMap.set(name, p);
+        }
+      }
+    });
+    
+    setDuplicates(dups);
+    if (dups.length === 0) say('No duplicates found');
+    else say(`Found ${dups.length} duplicate group(s)`);
+  }
+  
+  function selectDuplicates() {
+    const newSet = new Set();
+    duplicates.forEach(group => {
+      group.items.slice(1).forEach(p => newSet.add(p.id));
+    });
+    setSelected(newSet);
+    say(`Selected ${newSet.size} duplicate(s) (keeping first of each group)`);
+  }
 
   return (
     <>
@@ -208,17 +288,48 @@ function Participants({ h }) {
         {msg && <div style={{ marginTop: 8 }} className={msg.bad ? 'err' : 'ok'}>{msg.text}{(msg.extra || []).map((e, i) => <div key={i} className="err">{e}</div>)}</div>}
       </div>
       <div className="card">
-        <div className="top"><h2>Participants ({d?.total ?? '…'})</h2><input style={{ maxWidth: 260 }} placeholder="Search" value={q} onChange={(e) => setQ(e.target.value)} /></div>
+        <div className="top">
+          <h2>Participants ({d?.total ?? '…'})</h2>
+          <div className="row" style={{ flex: 0, margin: 0, gap: 8 }}>
+            <input style={{ maxWidth: 200 }} placeholder="Search" value={q} onChange={(e) => setQ(e.target.value)} />
+            <div style={{ position: 'relative' }}>
+              <button className="sec" onClick={() => { const menu = document.getElementById('part-select-menu'); menu.style.display = menu.style.display === 'block' ? 'none' : 'block'; }}>
+                Select ▼
+              </button>
+              <div id="part-select-menu" style={{ display: 'none', position: 'absolute', top: '100%', right: 0, background: 'white', border: '1px solid var(--bd)', borderRadius: 4, marginTop: 4, minWidth: 150, zIndex: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+                <div style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid var(--bd)' }} onClick={() => { selectAll(); document.getElementById('part-select-menu').style.display = 'none'; }}>Select all</div>
+                <div style={{ padding: '8px 12px', cursor: 'pointer' }} onClick={() => { deselectAll(); document.getElementById('part-select-menu').style.display = 'none'; }}>Deselect all</div>
+              </div>
+            </div>
+            <button className="sec" onClick={findDuplicates}>Find duplicates</button>
+            {duplicates.length > 0 && <button className="sec" onClick={selectDuplicates}>Select duplicates</button>}
+            {selected.size > 0 && <button className="del" onClick={deleteSelected}>Delete {selected.size} selected</button>}
+          </div>
+        </div>
         <div className="mu">Roll numbers are stored hashed and can&apos;t be viewed again. Use Change roll no. to fix a typo.</div>
+        {duplicates.length > 0 && (
+          <div style={{ padding: '8px 12px', background: '#fff3cd', border: '1px solid #ffc107', borderRadius: 4, marginBottom: 8 }}>
+            <b>Found {duplicates.length} duplicate group(s):</b>
+            {duplicates.slice(0, 10).map((group, i) => (
+              <div key={i} style={{ fontSize: 13, marginTop: 4 }}>
+                Group {i + 1} ({group.type}): {group.items.length} duplicates - "{group.key.slice(0, 40)}"
+              </div>
+            ))}
+            {duplicates.length > 10 && <div style={{ fontSize: 13, marginTop: 4 }}>...and {duplicates.length - 10} more</div>}
+          </div>
+        )}
         <div className="scroll">
           <table>
-            <thead><tr><th>Email (username)</th><th>Name</th><th>College</th><th /></tr></thead>
+            <thead><tr><th style={{ width: 30 }}><input type="checkbox" onChange={(e) => e.target.checked ? selectAll() : deselectAll()} style={{ cursor: 'pointer' }} /></th><th>Email (username)</th><th>Name</th><th>College</th><th /></tr></thead>
             <tbody>
               {(d?.items || []).map((p) => (
-                <tr key={p.id}><td className="mono">{p.email}</td><td>{p.name}</td><td>{p.college}</td>
-                  <td><button className="sec" onClick={() => changeRoll(p)}>Change roll no.</button> <button className="del" onClick={() => remove(p)}>✕</button></td></tr>
+                <tr key={p.id} style={{ background: selected.has(p.id) ? '#fff3e0' : 'transparent' }}>
+                  <td><input type="checkbox" checked={selected.has(p.id)} onChange={() => toggleSelect(p.id)} style={{ cursor: 'pointer' }} /></td>
+                  <td className="mono">{p.email}</td><td>{p.name}</td><td>{p.college}</td>
+                  <td><button className="sec" onClick={() => changeRoll(p)}>Change roll no.</button> <button className="del" onClick={() => remove(p)}>✕</button></td>
+                </tr>
               ))}
-              {d && !d.items.length && <tr><td colSpan={4} className="mu">No participants</td></tr>}
+              {d && !d.items.length && <tr><td colSpan={5} className="mu">No participants</td></tr>}
             </tbody>
           </table>
         </div>
@@ -233,9 +344,12 @@ function Questions({ h }) {
   const [f, setF] = useState(blank);
   const [qs, setQs] = useState([]);
   const [msg, setMsg] = useState(null);
+  const [selected, setSelected] = useState(new Set());
+  const [searchDup, setSearchDup] = useState('');
+  const [duplicates, setDuplicates] = useState([]);
   const file = useRef(null);
 
-  const load = useCallback(async () => { try { setQs(await api(`/admin/hackathons/${h.id}/questions`)); } catch (e) { setMsg({ bad: true, text: e.message }); } }, [h.id]);
+  const load = useCallback(async () => { try { setQs(await api(`/admin/hackathons/${h.id}/questions`)); setSelected(new Set()); } catch (e) { setMsg({ bad: true, text: e.message }); } }, [h.id]);
   useEffect(() => { load(); }, [load]);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
 
@@ -252,6 +366,59 @@ function Questions({ h }) {
   async function remove(q) {
     if (!confirm('Delete question?')) return;
     try { await api(`/admin/hackathons/${h.id}/questions/${q.id}`, { method: 'DELETE', retries: 0 }); load(); } catch (e) { setMsg({ bad: true, text: e.message }); }
+  }
+  
+  const toggleSelect = (id) => {
+    const newSet = new Set(selected);
+    if (newSet.has(id)) newSet.delete(id); else newSet.add(id);
+    setSelected(newSet);
+  };
+  
+  const selectAll = () => setSelected(new Set(qs.map(q => q.id)));
+  const deselectAll = () => setSelected(new Set());
+  
+  async function deleteSelected() {
+    if (selected.size === 0) { setMsg({ bad: true, text: 'No questions selected' }); return; }
+    if (!confirm(`Delete ${selected.size} selected question(s)?`)) return;
+    setMsg({ text: `Deleting ${selected.size} question(s)...` });
+    let deleted = 0, failed = 0;
+    for (const id of selected) {
+      try { await api(`/admin/hackathons/${h.id}/questions/${id}`, { method: 'DELETE', retries: 0 }); deleted++; }
+      catch { failed++; }
+    }
+    setMsg({ text: `${deleted} deleted${failed ? ` · ${failed} failed` : ''}`, bad: failed > 0 });
+    load();
+  }
+  
+  function findDuplicates() {
+    const normalized = new Map();
+    const dups = [];
+    qs.forEach(q => {
+      const key = q.text.toLowerCase().replace(/\s+/g, ' ').trim();
+      if (normalized.has(key)) {
+        const existing = normalized.get(key);
+        if (!dups.find(d => d.includes(existing.id))) {
+          dups.push([existing, q]);
+        } else {
+          dups.find(d => d.includes(existing.id)).push(q);
+        }
+      } else {
+        normalized.set(key, q);
+      }
+    });
+    setDuplicates(dups);
+    setSearchDup('found');
+    if (dups.length === 0) setMsg({ text: 'No duplicates found' });
+    else setMsg({ text: `Found ${dups.length} duplicate group(s)` });
+  }
+  
+  function selectDuplicates() {
+    const newSet = new Set();
+    duplicates.forEach(group => {
+      group.slice(1).forEach(q => newSet.add(q.id));
+    });
+    setSelected(newSet);
+    setMsg({ text: `Selected ${newSet.size} duplicate(s) (keeping first of each group)` });
   }
 
   return (
@@ -271,11 +438,33 @@ function Questions({ h }) {
         {msg && <div style={{ marginTop: 8 }} className={msg.bad ? 'err' : 'ok'}>{msg.text}{(msg.extra || []).map((e, i) => <div key={i} className="err">{e}</div>)}</div>}
       </div>
       <div className="card">
-        <h2>Questions ({qs.length}) · {qs.reduce((n, q) => n + q.marks, 0)} marks</h2>
+        <div className="top">
+          <h2>Questions ({qs.length}) · {qs.reduce((n, q) => n + q.marks, 0)} marks</h2>
+          <div className="row" style={{ flex: 0, margin: 0, gap: 8 }}>
+            <div style={{ position: 'relative' }}>
+              <button className="sec" onClick={() => { const menu = document.getElementById('select-menu'); menu.style.display = menu.style.display === 'block' ? 'none' : 'block'; }}>
+                Select ▼
+              </button>
+              <div id="select-menu" style={{ display: 'none', position: 'absolute', top: '100%', left: 0, background: 'white', border: '1px solid var(--bd)', borderRadius: 4, marginTop: 4, minWidth: 150, zIndex: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+                <div style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid var(--bd)' }} onClick={() => { selectAll(); document.getElementById('select-menu').style.display = 'none'; }}>Select all</div>
+                <div style={{ padding: '8px 12px', cursor: 'pointer' }} onClick={() => { deselectAll(); document.getElementById('select-menu').style.display = 'none'; }}>Deselect all</div>
+              </div>
+            </div>
+            <button className="sec" onClick={findDuplicates}>Find duplicates</button>
+            {duplicates.length > 0 && <button className="sec" onClick={selectDuplicates}>Select duplicates</button>}
+            {selected.size > 0 && <button className="del" onClick={deleteSelected}>Delete {selected.size} selected</button>}
+          </div>
+        </div>
+        {duplicates.length > 0 && (
+          <div style={{ padding: '8px 12px', background: '#fff3cd', border: '1px solid #ffc107', borderRadius: 4, marginBottom: 8 }}>
+            <b>Found {duplicates.length} duplicate group(s):</b> {duplicates.map((group, i) => <div key={i} style={{ fontSize: 13, marginTop: 4 }}>Group {i + 1}: {group.length} duplicates of "{group[0].text.slice(0, 50)}..."</div>)}
+          </div>
+        )}
         {qs.map((q, i) => (
-          <div key={q.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--bd)' }}>
+          <div key={q.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--bd)', background: selected.has(q.id) ? '#fff3e0' : 'transparent' }}>
+            <input type="checkbox" checked={selected.has(q.id)} onChange={() => toggleSelect(q.id)} style={{ marginRight: 8, cursor: 'pointer' }} />
             <b>{i + 1}. {q.text}</b> <span className="mu">[{q.marks} mk]</span> <button className="del" style={{ float: 'right' }} onClick={() => remove(q)}>✕</button>
-            <div className="mu">{['a', 'b', 'c', 'd'].map((k) => <span key={k} className={q.correct === k.toUpperCase() ? 'ok' : ''} style={{ marginRight: 14 }}>{k.toUpperCase()}) {q[k]}</span>)}</div>
+            <div className="mu" style={{ marginLeft: 24 }}>{['a', 'b', 'c', 'd'].map((k) => <span key={k} className={q.correct === k.toUpperCase() ? 'ok' : ''} style={{ marginRight: 14 }}>{k.toUpperCase()}) {q[k]}</span>)}</div>
           </div>
         ))}
         {!qs.length && <p className="mu">No questions yet.</p>}
