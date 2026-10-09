@@ -1,0 +1,35 @@
+# Firebase App Hosting (Cloud Run under the hood) - the API runs here. Docs: firebase.google.com/docs/app-hosting
+runConfig:
+  cpu: 2
+  memoryMiB: 1024
+  concurrency: 80          # requests handled in parallel by ONE instance (Cloud Run default). Node handles this fine: calls are I/O-bound
+  minInstances: 2          # always warm: no cold start when 2,500 students arrive. Costs a little while idle - set to 0 after the event
+  maxInstances: 10         # hard ceiling so a bug/attack can't scale your bill without limit
+
+env:
+  # Plain values (safe to commit). Use your real Vercel URL(s), comma-separated, no trailing slash.
+  - variable: ALLOWED_ORIGINS
+    value: https://YOUR-APP.vercel.app
+    availability: [RUNTIME]
+  - variable: RL_LOGIN_PER_SEC
+    value: "300"
+    availability: [RUNTIME]
+  # Secrets live in Cloud Secret Manager:  firebase apphosting:secrets:set NAME
+  - variable: PROCTOR_SECRET
+    secret: PROCTOR_SECRET
+    availability: [RUNTIME]
+  - variable: PROCTOR_PEPPER
+    secret: PROCTOR_PEPPER
+    availability: [RUNTIME]
+  - variable: PROCTOR_ADMIN_USER
+    secret: PROCTOR_ADMIN_USER
+    availability: [RUNTIME]
+  - variable: PROCTOR_ADMIN_PASS
+    secret: PROCTOR_ADMIN_PASS
+    availability: [RUNTIME]
+  - variable: UPSTASH_REDIS_REST_URL
+    secret: UPSTASH_REDIS_REST_URL
+    availability: [RUNTIME]
+  - variable: UPSTASH_REDIS_REST_TOKEN
+    secret: UPSTASH_REDIS_REST_TOKEN
+    availability: [RUNTIME]
