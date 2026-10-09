@@ -1,0 +1,31 @@
+question,a,b,c,d,correct,marks
+"What is AWS?",Cloud Computing Platform,Database Only,Operating System,Web Browser,A,1
+"Which AWS service is used for object storage?",EC2,S3,Lambda,RDS,B,1
+"What does EC2 stand for?",Elastic Cloud Compute,Elastic Compute Cloud,Easy Cloud Computing,Elastic Container Cloud,B,1
+"Which service is used for serverless computing?",EC2,S3,Lambda,CloudFront,C,1
+"What is the default region for AWS?",us-east-1,us-west-1,eu-west-1,ap-south-1,A,1
+"Which service provides DNS?",CloudFront,Route 53,S3,VPC,B,1
+"What is AWS IAM used for?",Storage,Identity and Access Management,Database,Networking,B,1
+"Which database is NoSQL?",RDS,Aurora,DynamoDB,Redshift,C,1
+"What is CloudFormation?",Monitoring Tool,Infrastructure as Code,Container Service,CDN Service,B,1
+"Which service delivers content globally?",S3,CloudFront,EC2,Lambda,B,1
+"What is VPC?",Virtual Private Cloud,Very Private Connection,Virtual Public Cloud,Variable Private Cloud,A,1
+"Which service is for container orchestration?",Lambda,ECS,S3,RDS,B,1
+"What is Amazon Aurora?",NoSQL Database,Object Storage,Relational Database,Cache Service,C,1
+"Which service monitors AWS resources?",CloudWatch,CloudTrail,Config,Inspector,A,1
+"What is AWS Amplify used for?",Mobile and Web App Development,Database Management,Server Management,Networking,A,1
+"Which service provides message queuing?",SNS,SQS,SES,Kinesis,B,1
+"What is Amazon Redshift?",Data Warehouse,Object Storage,Cache,CDN,A,1
+"Which service is for continuous integration?",CodeCommit,CodePipeline,CodeBuild,All of the above,D,1
+"What is AWS Glue?",ETL Service,Database,Storage,Networking,A,1
+"Which service provides real-time data streaming?",Kinesis,SQS,SNS,Lambda,A,1
+"What is Amazon Athena?",Query Service for S3,Database,Storage,CDN,A,1
+"Which service is for machine learning?",SageMaker,Rekognition,Comprehend,All of the above,D,1
+"What is AWS Step Functions?",Workflow Orchestration,Storage,Database,Networking,A,1
+"Which service provides API management?",API Gateway,Lambda,EC2,S3,A,1
+"What is AWS Cognito?",User Authentication,Storage,Database,CDN,A,1
+"Which service is for cost management?",Cost Explorer,CloudWatch,Config,Inspector,A,1
+"What is Amazon EFS?",Elastic File System,Elastic Function Service,Easy File Storage,Elastic Form Service,A,1
+"Which service provides pub/sub messaging?",SNS,SQS,SES,Kinesis,A,1
+"What is AWS X-Ray?",Distributed Tracing,Storage,Database,CDN,A,1
+"Which service is for blockchain?",Managed Blockchain,DynamoDB,RDS,S3,A,1

@@ -246,7 +246,7 @@ function Questions({ h }) {
   async function upload() {
     const f0 = file.current?.files?.[0]; if (!f0) return;
     const fd = new FormData(); fd.append('file', f0);
-    try { const r = await api(`/admin/hackathons/${h.id}/questions/upload`, { method: 'POST', form: fd, retries: 0 }); setMsg({ text: `${r.created} added`, extra: r.errors }); load(); }
+    try { const r = await api(`/admin/hackathons/${h.id}/questions/upload`, { method: 'POST', form: fd, retries: 0 }); setMsg({ text: `${r.created} added${r.skipped_duplicates ? ` · ${r.skipped_duplicates} duplicate(s) skipped` : ''}${r.error_count ? ` · ${r.error_count} row(s) skipped` : ''}`, extra: r.errors }); load(); }
     catch (e) { setMsg({ bad: true, text: e.message }); }
   }
   async function remove(q) {
@@ -267,7 +267,7 @@ function Questions({ h }) {
         </div>
         <h2 style={{ marginTop: 14 }}>Bulk upload</h2>
         <div className="row"><input type="file" ref={file} accept=".csv,.xlsx" /><button onClick={upload}>Upload</button></div>
-        <div className="mu">Header row: <span className="mono">question,a,b,c,d,correct,marks</span> (.csv or .xlsx)</div>
+        <div className="mu">Columns in order: <b>1</b> question · <b>2</b> A · <b>3</b> B · <b>4</b> C · <b>5</b> D · <b>6</b> correct (A/B/C/D) · <b>7</b> marks (optional). Header row optional. Upload the full pool; each participant gets {h.questions_per_participant || 'all'} random questions.</div>
         {msg && <div style={{ marginTop: 8 }} className={msg.bad ? 'err' : 'ok'}>{msg.text}{(msg.extra || []).map((e, i) => <div key={i} className="err">{e}</div>)}</div>}
       </div>
       <div className="card">
@@ -307,7 +307,7 @@ function Integrity({ h }) {
 }
 
 function Settings({ h, onSaved }) {
-  const [f, setF] = useState({ name: h.name, duration_minutes: h.duration_minutes, negative_marks: h.negative_marks, pass_percentage: h.pass_percentage, max_violations: h.max_violations, shuffle: !!h.shuffle, is_open: !!h.is_open });
+  const [f, setF] = useState({ name: h.name, duration_minutes: h.duration_minutes, negative_marks: h.negative_marks, pass_percentage: h.pass_percentage, max_violations: h.max_violations, questions_per_participant: h.questions_per_participant ?? 30, shuffle: !!h.shuffle, is_open: !!h.is_open });
   const [msg, setMsg] = useState(null);
   const set = (k, num) => (e) => setF({ ...f, [k]: num ? +e.target.value : e.target.value });
   const tick = (k) => (e) => setF({ ...f, [k]: e.target.checked });
@@ -323,6 +323,9 @@ function Settings({ h, onSaved }) {
         <label>Negative marks / wrong<input type="number" step="0.25" value={f.negative_marks} onChange={set('negative_marks', true)} /></label>
         <label>Pass %<input type="number" value={f.pass_percentage} onChange={set('pass_percentage', true)} /></label>
         <label>Max violations (0 = never auto-submit)<input type="number" value={f.max_violations} onChange={set('max_violations', true)} /></label>
+      </div>
+      <div className="row">
+        <label>Questions per participant (0 = all)<input type="number" min="0" value={f.questions_per_participant} onChange={set('questions_per_participant', true)} /></label>
       </div>
       <div className="row">
         <label><input type="checkbox" checked={f.shuffle} onChange={tick('shuffle')} style={{ minWidth: 0 }} /> Shuffle questions &amp; options per participant</label>

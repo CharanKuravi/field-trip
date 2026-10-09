@@ -4,8 +4,8 @@ import { db, P, FieldPath, FieldValue } from './firebase.js';
 import { HttpError, env } from './http.js';
 import { signToken } from './auth.js';
 import { limitLoginGlobal, assertLoginAllowed, recordLoginFailure } from './ratelimit.js';
-import { participantCtx, getHack, getQuestions, finalize, settle, addEvent, readLive } from './core.js';
-import { EMAIL_RE, normEmail, normRoll, checkRoll, buildView, flatAnswers } from './logic.js';
+import { participantCtx, getHack, getQuestions, paperOf, finalize, settle, addEvent, readLive } from './core.js';
+import { EMAIL_RE, normEmail, normRoll, checkRoll, buildView, flatAnswers, paperSize } from './logic.js';
 
 const secondsLeft = (d) => Math.max(0, Math.floor((d.deadline - Date.now()) / 1000));
 const needJson = async (json) => { const b = await json(); if (!b || typeof b !== 'object') throw new HttpError(400, 'Bad request'); return b; };
@@ -29,7 +29,7 @@ async function me(c) {
   return {
     name: d.name, pid: x.email, hackathon: h.name, duration_minutes: h.duration_minutes, max_violations: h.max_violations,
     is_open: !!h.is_open, status: done ? 'submitted' : d.startedAt ? 'in_progress' : 'not_started',
-    questions: (await getQuestions(x.hid)).length,
+    questions: paperOf(h, await getQuestions(x.hid), x.email).length,
     result: done ? { score: d.score ?? 0, total: d.total ?? 0, violations: d.violations || 0, auto_submitted: !!d.autoSubmitted,
       passed: !!d.total && (d.score / d.total) * 100 >= h.pass_percentage } : null,
   };
@@ -51,7 +51,7 @@ async function start(c) {
   }
   const answers = d.answers ?? (await ref.get()).data().answers ?? {};    // resume: bring back saved answers
   const qs = await getQuestions(x.hid);
-  return { name: d.name, pid: x.email, questions: buildView(qs, x.hid, x.email, h.shuffle), saved: flatAnswers(answers),
+  return { name: d.name, pid: x.email, questions: buildView(qs, x.hid, x.email, h.shuffle !== false, paperSize(h)), saved: flatAnswers(answers),
     max_violations: h.max_violations, violations: d.violations || 0, seconds_left: secondsLeft(d) };
 }
 
@@ -65,7 +65,8 @@ async function answer(c) {
   const b = await needJson(c.json), x = await active(c);
   const sel = String(b.selected ?? '').toUpperCase() || null, qid = String(b.question_id ?? '');
   if (sel && !['A', 'B', 'C', 'D'].includes(sel)) throw new HttpError(400, 'Bad option');
-  if (!(await getQuestions(x.hid)).some((q) => q.id === qid)) throw new HttpError(404, 'Question not found');
+  const [h, pool] = await Promise.all([getHack(x.hid), getQuestions(x.hid)]);
+  if (!paperOf(h, pool, x.email).some((q) => q.id === qid)) throw new HttpError(404, 'Question not found');
   await P.doc(x.email).update(new FieldPath('answers', qid), { s: sel, t: Date.now() });   // one field of one doc
   return { ok: true };
 }

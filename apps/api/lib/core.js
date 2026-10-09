@@ -8,7 +8,7 @@ import { memo, forget } from './cache.js';
 import { HttpError } from './http.js';
 import { verifyToken } from './auth.js';
 import { limitUser } from './ratelimit.js';
-import { grade, flatAnswers, sortQuestions } from './logic.js';
+import { grade, flatAnswers, sortQuestions, paperFor, paperSize } from './logic.js';
 
 export const GRACE_MS = 15000;
 export const ONLINE_MS = 25000;
@@ -26,6 +26,7 @@ export const getQuestions = (hid) => memo(`q:${hid}`, 30000, async () => {
 export const dropHack = (hid) => forget(`h:${hid}`);
 export const dropQuestions = (hid) => forget(`q:${hid}`);
 export const dropRoster = (hid) => forget(`r:${hid}`);
+export const paperOf = (h, qs, email) => paperFor(qs, h.id, email, h.shuffle !== false, paperSize(h));
 
 export async function readLive(email) {
   const [snap] = await db.getAll(P.doc(email), { fieldMask: LIVE_FIELDS });
@@ -47,7 +48,8 @@ export const expired = (d) => !!d.startedAt && !d.submittedAt && Date.now() > d.
 
 /** Grade + close an attempt. Transactional and idempotent: concurrent submits/sweeps can't double-grade. */
 export async function finalize(email, hid, { auto = false, extra = null } = {}) {
-  const [h, qs] = await Promise.all([getHack(hid), getQuestions(hid)]);
+  const [h, pool] = await Promise.all([getHack(hid), getQuestions(hid)]);
+  const qs = paperOf(h, pool, email);   // grade ONLY this participant's questions
   const ref = P.doc(email);
   return db.runTransaction(async (tx) => {
     const d = (await tx.get(ref)).data();

@@ -8,15 +8,15 @@ import { HttpError, env } from './http.js';
 import { signToken, requireAdmin } from './auth.js';
 import { limitAdmin, assertAdminAllowed, recordAdminFailure } from './ratelimit.js';
 import { getHack, getQuestions, finalize, expired, dropHack, dropQuestions, dropRoster, ONLINE_MS } from './core.js';
-import { EMAIL_RE, normEmail, normRoll, hashRoll, HDR, pick, csvEscape, computeIntegrity } from './logic.js';
-import { readTable } from './table.js';
+import { EMAIL_RE, normEmail, normRoll, hashRoll, HDR, pick, csvEscape, computeIntegrity, questionRows, paperSize } from './logic.js';
+import { readTable, readGrid } from './table.js';
 
 const ROSTER_FIELDS = ['hid', 'email', 'name', 'phone', 'college', 'startedAt', 'deadline', 'submittedAt', 'score', 'total', 'violations', 'vtypes', 'autoSubmitted', 'lastSeen', 'ip'];
 const roster = (hid) => memo(`r:${hid}`, 4000, async () => (await P.where('hid', '==', hid).select(...ROSTER_FIELDS).get()).docs.map((d) => ({ id: d.id, ...d.data() })));
 const status = (r) => (r.submittedAt ? 'submitted' : r.startedAt ? 'in_progress' : 'not_started');
 const pages = (total, per) => Math.max(1, Math.ceil(total / per));
 const same = (a, b) => { const x = Buffer.from(String(a)), y = Buffer.from(String(b)); return x.length === y.length && timingSafeEqual(x, y); };
-const hdict = (id, h) => ({ id, name: h.name, duration_minutes: h.duration_minutes, negative_marks: h.negative_marks, pass_percentage: h.pass_percentage, max_violations: h.max_violations, shuffle: h.shuffle, is_open: h.is_open });
+const hdict = (id, h) => ({ id, name: h.name, duration_minutes: h.duration_minutes, negative_marks: h.negative_marks, pass_percentage: h.pass_percentage, max_violations: h.max_violations, shuffle: h.shuffle, is_open: h.is_open, questions_per_participant: paperSize(h) });
 
 const COPY = ['copy_attempt','paste_attempt','cut_attempt'], TAB = ['tab_switch','window_blur','fullscreen_exit'];
 const vsum = (vt, keys) => keys.reduce((n, k) => n + (Number(vt?.[k]) || 0), 0);
@@ -58,7 +58,8 @@ const hackFields = (b) => {
   const name = String(b.name ?? '').trim(); if (!name) throw new HttpError(400, 'Name is required');
   const n = (v, d) => (Number.isFinite(Number(v)) ? Number(v) : d);
   return { name, duration_minutes: Math.max(1, n(b.duration_minutes, 60)), negative_marks: Math.max(0, n(b.negative_marks, 0)), pass_percentage: n(b.pass_percentage, 40),
-    max_violations: Math.max(0, n(b.max_violations, 5)), shuffle: b.shuffle !== false, is_open: !!b.is_open };
+    max_violations: Math.max(0, n(b.max_violations, 5)), shuffle: b.shuffle !== false, is_open: !!b.is_open,
+    questions_per_participant: Math.max(0, Math.floor(n(b.questions_per_participant, 30))) };
 };
 const createHack = A(async ({ json }) => { const f = hackFields(await json()), ref = await H.add({ ...f, created: Date.now() }); return hdict(ref.id, f); });
 const updateHack = A(async ({ params, json }) => {
@@ -155,18 +156,24 @@ const addQ = A(async ({ params, json }) => {
   const q = qFields(await json()); await getHack(params.hid);
   const ref = await qcol(params.hid).add({ ...q, order: Date.now() }); dropQuestions(params.hid); return { id: ref.id };
 });
+const qKey = (t) => String(t).toLowerCase().replace(/\s+/g, ' ').trim();
 const uploadQs = A(async ({ req, params }) => {
   await getHack(params.hid);
-  const { name, buf } = await fileFrom(req), rows = await readTable(name, buf), errors = [], base = Date.now(), bw = db.bulkWriter(), jobs = [];
-  let created = 0;
+  const { name, buf } = await fileFrom(req), rows = questionRows(await readGrid(name, buf));
+  if (!rows.length) throw new HttpError(400, 'The file has no questions');
+  const errors = [], base = Date.now(), bw = db.bulkWriter(), jobs = [];
+  const seen = new Set((await qcol(params.hid).select('text').get()).docs.map((d) => qKey(d.data().text)));
+  let created = 0, skipped = 0;
   rows.forEach((x, i) => {
     try {
-      const q = qFields({ text: x.question, a: x.a, b: x.b, c: x.c, d: x.d, correct: x.correct, marks: x.marks });
-      jobs.push(bw.create(qcol(params.hid).doc(), { ...q, order: base + i }).then(() => { created++; }, () => { errors.push(`row ${i + 2}: could not be saved`); }));
-    } catch (e) { errors.push(`row ${i + 2}: ${e.message}`); }
+      const q = qFields(x), k = qKey(q.text);
+      if (seen.has(k)) { skipped++; return; }
+      seen.add(k);
+      jobs.push(bw.create(qcol(params.hid).doc(), { ...q, order: base + i }).then(() => { created++; }, () => { errors.push(`${x.label}: could not be saved`); }));
+    } catch (e) { errors.push(`${x.label}: ${e.message}`); }
   });
   await bw.close(); await Promise.all(jobs); dropQuestions(params.hid);
-  return { created, errors: errors.slice(0, 50) };
+  return { created, skipped_duplicates: skipped, error_count: errors.length, errors: errors.slice(0, 50) };
 });
 const delQ = A(async ({ params }) => { await qcol(params.hid).doc(params.qid).delete(); dropQuestions(params.hid); return { ok: true }; });
 

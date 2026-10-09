@@ -31,11 +31,18 @@ export function seededShuffle(arr, seed) {
 
 export const sortQuestions = (qs) => [...qs].sort((x, y) => (x.order ?? 0) - (y.order ?? 0) || (x.id < y.id ? -1 : 1));
 
-/** Per-participant paper. The correct answer is never included. Options keep their ORIGINAL letter as `key`,
- *  so shuffling can never break grading. */
-export function buildView(qs, hid, pid, shuffle) {
+export const DEFAULT_PAPER_SIZE = 30;   // questions each participant gets (0 = the whole pool)
+export const paperSize = (h) => { const n = Number(h?.questions_per_participant); return Number.isFinite(n) && n >= 0 ? Math.floor(n) : DEFAULT_PAPER_SIZE; };
+
+/** The questions ONE participant is given: random `size` out of the pool, random order.
+ *  Seeded by participant + hackathon, so refresh / re-login returns the SAME paper. */
+export function paperFor(qs, hid, pid, shuffle, size = DEFAULT_PAPER_SIZE) {
   const list = shuffle ? seededShuffle(qs, `${pid}-${hid}`) : qs;
-  return list.map((q) => {
+  return size > 0 ? list.slice(0, size) : list;
+}
+
+export function buildView(qs, hid, pid, shuffle, size = DEFAULT_PAPER_SIZE) {
+  return paperFor(qs, hid, pid, shuffle, size).map((q) => {
     let opts = ['A', 'B', 'C', 'D'].map((k) => ({ key: k, text: q[k.toLowerCase()] }));
     if (shuffle) opts = seededShuffle(opts, `${pid}-${q.id}`);
     return { id: q.id, text: q.text, marks: q.marks, options: opts };
@@ -67,6 +74,18 @@ export const HDR = {
   roll: ['rollnumber', 'rollno', 'roll', 'rollnum', 'registrationnumber', 'regno'],
   name: ['name', 'fullname', 'studentname'],
 };
+
+// ── question bank upload ──
+// By POSITION (header row optional): 1 question | 2 A | 3 B | 4 C | 5 D | 6 correct | 7 marks (optional)
+export const letterOf = (v) => { const m = /^\(?\s*(?:option\s*)?([A-D])\s*[).:]?\s*$/i.exec(String(v ?? '').trim()); return m ? m[1].toUpperCase() : ''; };
+export function questionRows(grid) {
+  const rows = (grid || []).map((r) => (r || []).map(cell));
+  const first = rows[0] || [];
+  const hasHeader = first.length > 5 && !letterOf(first[5]);   // a real question row has A/B/C/D in column 6
+  return rows.map((r, i) => ({ r, line: i + 1 })).slice(hasHeader ? 1 : 0).filter(({ r }) => r.some(Boolean))
+    .map(({ r, line }) => ({ label: `row ${line}`, text: r[0] ?? '', a: r[1] ?? '', b: r[2] ?? '', c: r[3] ?? '', d: r[4] ?? '', correct: letterOf(r[5]) || (r[5] ?? ''), marks: r[6] ?? '' }));
+}
+
 export const pick = (row, names) => { for (const k of names) if (row[k]) return row[k]; return ''; };
 
 export function csvEscape(v) { const s = v == null ? '' : String(v); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; }
