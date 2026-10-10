@@ -2,7 +2,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
 export const EMAIL_RE = /^[^@\s/]+@[^@\s/]+\.[^@\s/]+$/;       // '/' is banned: the email is used as a Firestore document ID
-export const USERNAME_RE = /^[a-zA-Z0-9._@-]{3,50}$/;          // Username: alphanumeric, dots, underscores, @, hyphens (3-50 chars)
+export const USERNAME_RE = /^[a-zA-Z0-9._@\s-]{3,50}$/;          // Username: alphanumeric, dots, underscores, @, spaces, hyphens (3-50 chars)
 export const normEmail = (s) => String(s ?? '').trim().toLowerCase();
 export const normRoll = (s) => String(s ?? '').replace(/\s+/g, '').toUpperCase();   // case- and space-insensitive
 

@@ -69,7 +69,7 @@ const updateHack = A(async ({ params, json }) => {
 // ── participants ──
 function build(hid, { email, roll, name, phone, college }) {
   const e = normEmail(email), r = normRoll(roll);
-  if (!USERNAME_RE.test(e)) throw new HttpError(400, `Invalid username: ${e || '(empty)'} - must be 3-50 characters (letters, numbers, dots, underscores, @ or hyphens)`);
+  if (!e || !USERNAME_RE.test(e)) throw new HttpError(400, `Invalid username: ${e || '(empty)'} - must be 3-50 characters (letters, numbers, dots, underscores, spaces, @ or hyphens)`);
   if (!r) throw new HttpError(400, 'Password is required');
   return [e, { hid, email: e, pwHash: hashRoll(e, r, env('PROCTOR_PEPPER')), name: String(name || '').trim() || e.split('@')[0],
     phone: String(phone || '').trim(), college: String(college || '').trim(), violations: 0, createdAt: Date.now() }];
