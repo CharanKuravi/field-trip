@@ -44,8 +44,8 @@ export default function Login({ onLogin }) {
           </>
         ) : (
           <>
-            <div className="row"><input value={u} onChange={(e) => setU(e.target.value)} type="email" autoComplete="username" placeholder="Email" required /></div>
-            <div className="row"><input value={pw} onChange={(e) => setPw(e.target.value)} type="password" autoComplete="current-password" placeholder="Roll number" required /></div>
+            <div className="row"><input value={u} onChange={(e) => setU(e.target.value)} type="text" autoComplete="username" placeholder="Username" required /></div>
+            <div className="row"><input value={pw} onChange={(e) => setPw(e.target.value)} type="password" autoComplete="current-password" placeholder="Password" required /></div>
             <button type="submit" style={{ width: '100%' }} disabled={busy}>{busy ? (queued ? 'Server is busy – you are in the queue…' : 'Signing in…') : 'Sign in →'}</button>
             {queued && <p className="mu">Lots of students are signing in. Please keep this page open – we will retry automatically.</p>}
           </>
