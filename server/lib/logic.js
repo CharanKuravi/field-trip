@@ -103,7 +103,7 @@ export function gridToRows(grid) {
     .map((r) => Object.fromEntries(head.map((k, i) => [k, r[i] ?? ''])));
 }
 export const HDR = {
-  email: ['email', 'emailid', 'emailaddress', 'mail', 'username'],
+  email: ['email', 'emailid', 'emailaddress', 'mail', 'username', 'teamname', 'team'],
   roll: ['rollnumber', 'rollno', 'roll', 'rollnum', 'registrationnumber', 'regno'],
   name: ['name', 'fullname', 'studentname'],
 };
