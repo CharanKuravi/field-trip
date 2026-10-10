@@ -21,11 +21,11 @@ export default function Exam({ ex, onDone }) {
     currentQuestion: 0,
     questionTimers: ex.questions.map((q) => {
       const subject = (q.subject || 'general').toLowerCase();
-      return subject === 'aws' ? 15 : subject === 'aptitude' || subject === 'apti' ? 30 : 30;
+      return subject === 'aws' ? 15 : subject === 'aptitude' || subject === 'apti' ? 27 : 27;
     }),
     questionTimeLeft: ex.questions.map((q) => {
       const subject = (q.subject || 'general').toLowerCase();
-      return subject === 'aws' ? 15 : subject === 'aptitude' || subject === 'apti' ? 30 : 30;
+      return subject === 'aws' ? 15 : subject === 'aptitude' || subject === 'apti' ? 27 : 27;
     })
   };
   const [, setTick] = useState(0);
@@ -110,61 +110,113 @@ export default function Exam({ ex, onDone }) {
   const s = R.current;
   const answered = Object.values(s.ans).filter(Boolean).length, left = Math.max(0, s.left);
   const wm = `<svg xmlns='http://www.w3.org/2000/svg' width='340' height='200'><text x='170' y='100' text-anchor='middle' transform='rotate(-25 170 100)' font-size='16' font-family='sans-serif' fill='rgba(128,128,128,0.22)'>${xml(ex.name)} · ${xml(ex.pid)}</text></svg>`;
+  
+  const currentQ = ex.questions[s.currentQuestion];
+  const subject = (currentQ.subject || 'general').toLowerCase();
+  const timeForQuestion = s.questionTimeLeft[s.currentQuestion];
+  const isLowTime = timeForQuestion <= 5;
 
   return (
     <div className={`exam${dim ? ' dim' : ''}`}>
       <div className="wm" style={{ backgroundImage: `url("data:image/svg+xml,${encodeURIComponent(wm)}")` }} />
       <div className="bar">
-        <b>{ex.questions.length} questions</b>
+        <b>Question {s.currentQuestion + 1} of {ex.questions.length}</b>
         <span>Answered <b>{answered}</b>/{ex.questions.length}</span>
         <span className="mu">{s.pend.size ? 'Saving…' : '✓ Saved'}</span>
         <span>Violations <span className="v">{s.violations}</span>/{ex.max_violations || '∞'}</span>
         <span className="mono">{Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}</span>
         <button onClick={() => { const un = ex.questions.length - answered; if (!un || confirm(`${un} unanswered. Submit anyway?`)) finish(); }}>Submit</button>
       </div>
-      <div className="wrap">
-        {ex.questions.map((q, i) => {
-          const subject = (q.subject || 'general').toLowerCase();
-          const timeForQuestion = s.questionTimeLeft[i];
-          const isLowTime = timeForQuestion <= 5;
-          
-          return (
-            <div className="card" key={q.id} style={{ opacity: i === s.currentQuestion ? 1 : 0.6, pointerEvents: i === s.currentQuestion ? 'auto' : 'none' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <div>
-                  <b>Q{i + 1}.</b> {q.text} <span className="mu">[{q.marks} mk]</span>
-                  {subject !== 'general' && <span className="mu" style={{ marginLeft: 8, textTransform: 'capitalize' }}>({subject})</span>}
-                </div>
-                <div style={{ 
-                  padding: '4px 12px', 
-                  borderRadius: 4, 
-                  background: isLowTime ? '#ff6b6b' : '#4CAF50',
-                  color: 'white',
-                  fontWeight: 'bold',
-                  fontSize: 14,
-                  minWidth: 60,
-                  textAlign: 'center'
-                }}>
-                  {timeForQuestion}s
-                </div>
+      <div style={{ display: 'flex', gap: 16 }}>
+        {/* Main question area */}
+        <div className="wrap" style={{ flex: 1 }}>
+          <div className="card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div style={{ fontSize: 20, fontWeight: 'bold' }}>
+                Question {s.currentQuestion + 1}
+                {subject !== 'general' && <span className="mu" style={{ marginLeft: 12, textTransform: 'capitalize', fontSize: 14 }}>({subject})</span>}
               </div>
-              {q.options.map((o) => (
-                <label key={o.key} className={`opt${s.ans[q.id] === o.key ? ' sel' : ''}`}>
-                  <input type="radio" name={`q${q.id}`} checked={s.ans[q.id] === o.key} onChange={() => choose(q.id, o.key)} style={{ marginRight: 8 }} />
-                  {o.text}
-                </label>
-              ))}
-              {i === s.currentQuestion && i < ex.questions.length - 1 && (
+              <div style={{ 
+                padding: '8px 16px', 
+                borderRadius: 6, 
+                background: isLowTime ? '#ff6b6b' : '#4CAF50',
+                color: 'white',
+                fontWeight: 'bold',
+                fontSize: 18,
+                minWidth: 70,
+                textAlign: 'center'
+              }}>
+                {timeForQuestion}s
+              </div>
+            </div>
+            <div style={{ fontSize: 16, marginBottom: 20, lineHeight: 1.6 }}>{currentQ.text}</div>
+            <div style={{ fontSize: 14, color: '#666', marginBottom: 12 }}>[{currentQ.marks} mark{currentQ.marks > 1 ? 's' : ''}]</div>
+            {currentQ.options.map((o) => (
+              <label key={o.key} className={`opt${s.ans[currentQ.id] === o.key ? ' sel' : ''}`} style={{ fontSize: 15, padding: '12px 16px' }}>
+                <input type="radio" name={`q${currentQ.id}`} checked={s.ans[currentQ.id] === o.key} onChange={() => choose(currentQ.id, o.key)} style={{ marginRight: 12 }} />
+                {o.text}
+              </label>
+            ))}
+            <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
+              {s.currentQuestion > 0 && (
                 <button 
-                  onClick={() => { s.currentQuestion = i + 1; s.questionTimeLeft[i + 1] = s.questionTimers[i + 1]; rerender(); }}
-                  style={{ marginTop: 12 }}
+                  className="sec"
+                  onClick={() => { s.currentQuestion -= 1; rerender(); }}
                 >
-                  Next Question →
+                  ← Previous
+                </button>
+              )}
+              {s.currentQuestion < ex.questions.length - 1 && (
+                <button 
+                  onClick={() => { s.currentQuestion += 1; s.questionTimeLeft[s.currentQuestion + 1] = s.questionTimers[s.currentQuestion + 1]; rerender(); }}
+                >
+                  Next →
                 </button>
               )}
             </div>
-          );
-        })}
+          </div>
+        </div>
+        
+        {/* Question navigator on right */}
+        <div style={{ width: 200, flexShrink: 0 }}>
+          <div className="card" style={{ position: 'sticky', top: 16 }}>
+            <h3 style={{ marginBottom: 12, fontSize: 16 }}>Questions</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
+              {ex.questions.map((q, i) => (
+                <button
+                  key={q.id}
+                  onClick={() => { s.currentQuestion = i; rerender(); }}
+                  style={{
+                    padding: '8px 4px',
+                    fontSize: 13,
+                    fontWeight: i === s.currentQuestion ? 'bold' : 'normal',
+                    background: i === s.currentQuestion ? '#FF9800' : s.ans[q.id] ? '#4CAF50' : '#f5f5f5',
+                    color: i === s.currentQuestion || s.ans[q.id] ? 'white' : '#333',
+                    border: i === s.currentQuestion ? '2px solid #FF9800' : 'none',
+                    borderRadius: 4,
+                    cursor: 'pointer'
+                  }}
+                >
+                  {i + 1}
+                </button>
+              ))}
+            </div>
+            <div style={{ marginTop: 16, fontSize: 12, color: '#666' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <div style={{ width: 16, height: 16, background: '#4CAF50', borderRadius: 2 }}></div>
+                <span>Answered</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <div style={{ width: 16, height: 16, background: '#FF9800', borderRadius: 2 }}></div>
+                <span>Current</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 16, height: 16, background: '#f5f5f5', border: '1px solid #ddd', borderRadius: 2 }}></div>
+                <span>Not answered</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       {fsLost && (
         <div className="overlay"><div>

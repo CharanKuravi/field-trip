@@ -39,11 +39,24 @@ export default function Participant({ onLogout }) {
     const r = me.result;
     return (
       <div className="center card">
-        <h1><span className="hl">Exam submitted</span></h1>
-        <p style={{ fontSize: 28, margin: '8px 0' }}><b>{r.score} / {r.total}</b></p>
-        <p className={r.passed ? 'ok' : 'err'}>{r.passed ? 'Passed' : 'Did not meet pass mark'}</p>
-        <p className="mu">Violations recorded: {r.violations}{r.auto_submitted ? ' · auto-submitted' : ''}</p>
-        <button onClick={onLogout}>Logout</button>
+        <h1><span className="hl">✓ Successfully Submitted</span></h1>
+        <p style={{ fontSize: 18, margin: '20px 0', color: '#4CAF50', fontWeight: 'bold' }}>
+          Your exam has been submitted successfully!
+        </p>
+        <div style={{ padding: '16px', background: '#f5f5f5', borderRadius: 8, marginBottom: 20 }}>
+          <p style={{ fontSize: 16, margin: '8px 0' }}>
+            <b>Violations recorded:</b> {r.violations}
+          </p>
+          {r.auto_submitted && (
+            <p className="err" style={{ marginTop: 8 }}>
+              Note: Exam was auto-submitted due to maximum violations
+            </p>
+          )}
+        </div>
+        <p className="mu" style={{ marginTop: 20 }}>
+          Your results will be reviewed by the exam administrator.
+        </p>
+        <button onClick={onLogout} style={{ marginTop: 20 }}>Logout</button>
       </div>
     );
   }
