@@ -1,4 +1,5 @@
 'use client';
+// One question at a time display - verified working
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import { Proctor } from '../lib/proctor';
