@@ -205,40 +205,6 @@ export default function SpotlightQuestion({
     ctx.restore();
   };
 
-  // Draw spotlight overlay - Only show content INSIDE the beam
-  const drawSpotlight = (ctx, width, height) => {
-    const pointer = pointerRef.current;
-
-    // Fill entire canvas with opaque dark overlay (hides everything)
-    ctx.fillStyle = spotlightConfig.backgroundColor;
-    ctx.fillRect(0, 0, width, height);
-
-    // Use destination-out to "punch a hole" where the spotlight is
-    // This reveals the content underneath
-    ctx.save();
-    ctx.globalCompositeOperation = 'destination-out';
-    
-    // Create radial gradient for smooth edge
-    const spotGradient = ctx.createRadialGradient(
-      pointer.x,
-      pointer.y,
-      0,
-      pointer.x,
-      pointer.y,
-      beamRadius
-    );
-    
-    // Center is fully transparent (content fully visible)
-    spotGradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
-    // Gradual fade to opaque at edge
-    spotGradient.addColorStop(1 - softness, 'rgba(255, 255, 255, 1)');
-    spotGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-    
-    ctx.fillStyle = spotGradient;
-    ctx.fillRect(0, 0, width, height);
-    ctx.restore();
-  };
-
   // Animation loop
   const animate = () => {
     const canvas = canvasRef.current;
@@ -248,14 +214,36 @@ export default function SpotlightQuestion({
     const width = canvas.width;
     const height = canvas.height;
 
-    // Draw base content
+    // Step 1: Clear and fill with dark background
+    ctx.fillStyle = spotlightConfig.backgroundColor;
+    ctx.fillRect(0, 0, width, height);
+
+    // Step 2: Create a clipping region for the spotlight
+    const pointer = pointerRef.current;
+    ctx.save();
+    
+    // Create circular clipping path
+    ctx.beginPath();
+    ctx.arc(pointer.x, pointer.y, beamRadius, 0, Math.PI * 2);
+    ctx.clip();
+    
+    // Step 3: Draw content (only visible inside spotlight due to clip)
     drawContent(ctx, width, height);
+    
+    // Step 4: Draw soft edge gradient for spotlight
+    const edgeGradient = ctx.createRadialGradient(
+      pointer.x, pointer.y, beamRadius * (1 - softness),
+      pointer.x, pointer.y, beamRadius
+    );
+    edgeGradient.addColorStop(0, 'rgba(10, 10, 10, 0)');
+    edgeGradient.addColorStop(1, spotlightConfig.backgroundColor);
+    ctx.fillStyle = edgeGradient;
+    ctx.fillRect(0, 0, width, height);
+    
+    ctx.restore();
 
-    // Draw watermark on top
+    // Step 5: Draw watermark everywhere (visible in dark areas and spotlight)
     drawWatermark(ctx, width, height);
-
-    // Draw spotlight overlay
-    drawSpotlight(ctx, width, height);
 
     // Continue animation
     if (spotlightConfig.pauseWhenHidden && document.hidden) {
