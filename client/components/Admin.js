@@ -303,7 +303,10 @@ function Participants({ h }) {
           <input type="file" ref={file} accept=".xlsx,.csv" style={{ flex: 2 }} />
           <button onClick={upload}>Upload</button>
           <button className="sec" onClick={() => {
-            const csv = 'team_name,roll_number,name,phone,college\\nBinary Benders,ROLL001,John Doe,1234567890,GIST College\\nCloud Forge,ROLL002,Jane Smith,9876543210,GIST College\\nTech Avengers,ROLL003,Bob Wilson,5551234567,GIST College';
+            const csv = `team_name,roll_number,name,phone,college
+Binary Benders,ROLL001,John Doe,1234567890,GIST College
+Cloud Forge,ROLL002,Jane Smith,9876543210,GIST College
+Tech Avengers,ROLL003,Bob Wilson,5551234567,GIST College`;
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
