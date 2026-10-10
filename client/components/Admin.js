@@ -299,8 +299,25 @@ function Participants({ h }) {
         <div className="row"><input type="text" placeholder="Username *" value={f.email} onChange={set('email')} /><input placeholder="Password *" value={f.roll_number} onChange={set('roll_number')} /></div>
         <div className="row"><input placeholder="Full name (optional)" value={f.name} onChange={set('name')} /><input placeholder="Phone (optional)" value={f.phone} onChange={set('phone')} /><input placeholder="College (optional)" value={f.college} onChange={set('college')} /><button onClick={add}>Add</button></div>
         <h2 style={{ marginTop: 14 }}>Bulk upload (Excel or CSV)</h2>
-        <div className="row"><input type="file" ref={file} accept=".xlsx,.csv" /><button onClick={upload}>Upload</button></div>
-        <div className="mu">First row must have headers: <span className="mono">email, roll_number</span> (optional: <span className="mono">name, phone, college</span>). Or use position: <b>column 1 = username</b>, <b>column 2 = password</b>. Thousands of rows are fine.</div>
+        <div className="row">
+          <input type="file" ref={file} accept=".xlsx,.csv" style={{ flex: 2 }} />
+          <button onClick={upload}>Upload</button>
+          <button className="sec" onClick={() => {
+            const csv = 'team_name,roll_number,name,phone,college\\nBinary Benders,ROLL001,John Doe,1234567890,GIST College\\nCloud Forge,ROLL002,Jane Smith,9876543210,GIST College\\nTech Avengers,ROLL003,Bob Wilson,5551234567,GIST College';
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'PARTICIPANT_UPLOAD_TEMPLATE.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+          }}>Download Template</button>
+        </div>
+        <div className="mu">
+          <div style={{ marginBottom: 8 }}>First row must have headers: <span className="mono">team_name, roll_number</span> (optional: <span className="mono">name, phone, college</span>).</div>
+          <div><b>Or use position:</b> <b>column 1 = username</b>, <b>column 2 = password</b>. Thousands of rows are fine.</div>
+          <div style={{ marginTop: 4 }}><b>Download the template</b> above to see the format!</div>
+        </div>
         {msg && <div style={{ marginTop: 8 }} className={msg.bad ? 'err' : 'ok'}>{msg.text}{(msg.extra || []).map((e, i) => <div key={i} className="err">{e}</div>)}</div>}
       </div>
       <div className="card">
