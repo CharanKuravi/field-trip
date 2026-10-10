@@ -34,11 +34,43 @@ export const sortQuestions = (qs) => [...qs].sort((x, y) => (x.order ?? 0) - (y.
 export const DEFAULT_PAPER_SIZE = 30;   // questions each participant gets (0 = the whole pool)
 export const paperSize = (h) => { const n = Number(h?.questions_per_participant); return Number.isFinite(n) && n >= 0 ? Math.floor(n) : DEFAULT_PAPER_SIZE; };
 
-/** The questions ONE participant is given: random `size` out of the pool, random order.
+/** The questions ONE participant is given: picks questions by subject, then random order.
+ *  For AWS Codeathon: 20 AWS + 10 Aptitude questions.
  *  Seeded by participant + hackathon, so refresh / re-login returns the SAME paper. */
 export function paperFor(qs, hid, pid, shuffle, size = DEFAULT_PAPER_SIZE) {
-  const list = shuffle ? seededShuffle(qs, `${pid}-${hid}`) : qs;
-  return size > 0 ? list.slice(0, size) : list;
+  // Group questions by subject
+  const bySubject = {};
+  qs.forEach(q => {
+    const subj = (q.subject || 'general').toLowerCase();
+    if (!bySubject[subj]) bySubject[subj] = [];
+    bySubject[subj].push(q);
+  });
+  
+  // Pick questions by subject: 20 AWS + 10 Aptitude
+  const aws = bySubject['aws'] || [];
+  const aptitude = bySubject['aptitude'] || bySubject['apti'] || [];
+  
+  let selected = [];
+  
+  // Shuffle each subject pool independently
+  const shuffledAws = shuffle ? seededShuffle(aws, `${pid}-${hid}-aws`) : aws;
+  const shuffledApti = shuffle ? seededShuffle(aptitude, `${pid}-${hid}-apti`) : aptitude;
+  
+  // Pick 20 AWS questions
+  selected = selected.concat(shuffledAws.slice(0, 20));
+  
+  // Pick 10 Aptitude questions  
+  selected = selected.concat(shuffledApti.slice(0, 10));
+  
+  // If we don't have enough questions in specific subjects, fall back to any remaining
+  if (selected.length < size && size > 0) {
+    const remaining = qs.filter(q => !selected.includes(q));
+    const shuffledRemaining = shuffle ? seededShuffle(remaining, `${pid}-${hid}-extra`) : remaining;
+    selected = selected.concat(shuffledRemaining.slice(0, size - selected.length));
+  }
+  
+  // Final shuffle of all selected questions for random order in the paper
+  return shuffle ? seededShuffle(selected, `${pid}-${hid}-final`) : selected;
 }
 
 export function buildView(qs, hid, pid, shuffle, size = DEFAULT_PAPER_SIZE) {
@@ -76,14 +108,14 @@ export const HDR = {
 };
 
 // ── question bank upload ──
-// By POSITION (header row optional): 1 question | 2 A | 3 B | 4 C | 5 D | 6 correct | 7 marks (optional)
+// By POSITION (header row optional): 1 question | 2 A | 3 B | 4 C | 5 D | 6 correct | 7 marks (optional) | 8 subject (optional)
 export const letterOf = (v) => { const m = /^\(?\s*(?:option\s*)?([A-D])\s*[).:]?\s*$/i.exec(String(v ?? '').trim()); return m ? m[1].toUpperCase() : ''; };
 export function questionRows(grid) {
   const rows = (grid || []).map((r) => (r || []).map(cell));
   const first = rows[0] || [];
   const hasHeader = first.length > 5 && !letterOf(first[5]);   // a real question row has A/B/C/D in column 6
   return rows.map((r, i) => ({ r, line: i + 1 })).slice(hasHeader ? 1 : 0).filter(({ r }) => r.some(Boolean))
-    .map(({ r, line }) => ({ label: `row ${line}`, text: r[0] ?? '', a: r[1] ?? '', b: r[2] ?? '', c: r[3] ?? '', d: r[4] ?? '', correct: letterOf(r[5]) || (r[5] ?? ''), marks: r[6] ?? '' }));
+    .map(({ r, line }) => ({ label: `row ${line}`, text: r[0] ?? '', a: r[1] ?? '', b: r[2] ?? '', c: r[3] ?? '', d: r[4] ?? '', correct: letterOf(r[5]) || (r[5] ?? ''), marks: r[6] ?? '', subject: String(r[7] ?? '').trim().toLowerCase() || 'general' }));
 }
 
 export const pick = (row, names) => { for (const k of names) if (row[k]) return row[k]; return ''; };

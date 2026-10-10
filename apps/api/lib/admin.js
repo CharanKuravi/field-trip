@@ -145,13 +145,14 @@ const delPart = A(async ({ params }) => {
 // ── questions ──
 function qFields(x) {
   const q = { text: String(x.text ?? '').trim(), a: String(x.a ?? '').trim(), b: String(x.b ?? '').trim(), c: String(x.c ?? '').trim(), d: String(x.d ?? '').trim(),
-    correct: String(x.correct ?? '').trim().toUpperCase(), marks: Math.max(1, parseInt(x.marks, 10) || 1) };
+    correct: String(x.correct ?? '').trim().toUpperCase(), marks: Math.max(1, parseInt(x.marks, 10) || 1), 
+    subject: String(x.subject ?? 'general').trim().toLowerCase() };
   if (!['A', 'B', 'C', 'D'].includes(q.correct)) throw new HttpError(400, 'correct must be A, B, C or D');
   if (!q.text || !q.a || !q.b || !q.c || !q.d) throw new HttpError(400, 'Question text and all four options are required');
   return q;
 }
 const qcol = (hid) => H.doc(hid).collection('questions');
-const listQs = A(async ({ params }) => (await getQuestions(params.hid)).map(({ id, text, a, b, c, d, correct, marks }) => ({ id, text, a, b, c, d, correct, marks })));
+const listQs = A(async ({ params }) => (await getQuestions(params.hid)).map(({ id, text, a, b, c, d, correct, marks, subject }) => ({ id, text, a, b, c, d, correct, marks, subject: subject || 'general' })));
 const addQ = A(async ({ params, json }) => {
   const q = qFields(await json()); await getHack(params.hid);
   const ref = await qcol(params.hid).add({ ...q, order: Date.now() }); dropQuestions(params.hid); return { id: ref.id };
@@ -211,6 +212,15 @@ const exportCsv = A(async ({ params }) => {
   return new Response(out.map((r) => r.map(csvEscape).join(',')).join('\n'), { headers: { 'Content-Type': 'text/csv', 'Content-Disposition': `attachment; filename=hackathon_${params.hid}_results.csv` } });
 });
 
+const exportQuestions = A(async ({ params }) => {
+  const qs = await getQuestions(params.hid);
+  const out = [['question', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'marks', 'subject']];
+  qs.forEach((q) => {
+    out.push([q.text, q.a, q.b, q.c, q.d, q.correct, q.marks, q.subject || 'general']);
+  });
+  return new Response(out.map((r) => r.map(csvEscape).join(',')).join('\n'), { headers: { 'Content-Type': 'text/csv', 'Content-Disposition': `attachment; filename=hackathon_${params.hid}_questions.csv` } });
+});
+
 const integrity = A(async ({ params }) => memo(`i:${params.hid}`, 60000, async () => {
   const [qs, snap] = await Promise.all([getQuestions(params.hid), P.where('hid', '==', params.hid).select('email', 'name', 'ip', 'startedAt', 'submittedAt', 'answers').get()]);
   return computeIntegrity(snap.docs.map((d) => d.data()), Object.fromEntries(qs.map((q) => [q.id, q.correct])));
@@ -224,6 +234,7 @@ export const adminRoutes = [
   ['PUT', '/admin/participants/:email/roll', changeRoll], ['DELETE', '/admin/participants/:email', delPart],
   ['GET', '/admin/hackathons/:hid/questions', listQs], ['POST', '/admin/hackathons/:hid/questions', addQ],
   ['POST', '/admin/hackathons/:hid/questions/upload', uploadQs], ['DELETE', '/admin/hackathons/:hid/questions/:qid', delQ],
+  ['GET', '/admin/hackathons/:hid/questions/export.csv', exportQuestions],
   ['GET', '/admin/hackathons/:hid/monitor', monitor], ['GET', '/admin/hackathons/:hid/export.csv', exportCsv],
   ['GET', '/admin/hackathons/:hid/integrity', integrity],
 ];
