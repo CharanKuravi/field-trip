@@ -60,25 +60,30 @@ export default function SpotlightQuestion({
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-
+    
+    // Get click position in CSS pixels
     let clickX, clickY;
     if (e.type === 'touchend') {
       const touch = e.changedTouches[0];
-      clickX = (touch.clientX - rect.left) * scaleX;
-      clickY = (touch.clientY - rect.top) * scaleY;
+      clickX = touch.clientX - rect.left;
+      clickY = touch.clientY - rect.top;
     } else {
-      clickX = (e.clientX - rect.left) * scaleX;
-      clickY = (e.clientY - rect.top) * scaleY;
+      clickX = e.clientX - rect.left;
+      clickY = e.clientY - rect.top;
     }
 
-    // Hit test against option rectangles
+    // Hit test against option rectangles (coordinates are in CSS pixels, same as click)
     const layout = layoutRef.current;
+    if (!layout || !layout.optionRects) return;
+    
     for (let i = 0; i < layout.optionRects.length; i++) {
       const r = layout.optionRects[i];
+      // Check if click is inside this option's rectangle
       if (clickX >= r.x && clickX <= r.x + r.w && clickY >= r.y && clickY <= r.y + r.h) {
-        onSelectOption(question.options[i].key);
+        // Found the clicked option - select it
+        const clickedOption = question.options[i];
+        console.log('Clicked option:', clickedOption.key, clickedOption.text); // Debug log
+        onSelectOption(clickedOption.key);
         break;
       }
     }
@@ -108,13 +113,13 @@ export default function SpotlightQuestion({
   const drawContent = (ctx, width, height) => {
     // Responsive sizing based on canvas width
     const isMobile = width < 600;
-    const padding = isMobile ? 25 : 40;
-    const optionPadding = isMobile ? 15 : 20;
-    const lineHeight = isMobile ? 30 : 32; // More line height for mobile
-    const optionHeight = isMobile ? 90 : 70; // Taller options
-    const optionSpacing = isMobile ? 12 : 15;
-    const questionFontSize = isMobile ? 22 : 26; // Slightly larger on mobile
-    const optionFontSize = isMobile ? 17 : 19;
+    const padding = isMobile ? 30 : 40; // More padding on mobile
+    const optionPadding = isMobile ? 18 : 20;
+    const lineHeight = isMobile ? 35 : 32; // Much more line height for mobile
+    const optionHeight = isMobile ? 100 : 70; // Much taller options
+    const optionSpacing = isMobile ? 15 : 15;
+    const questionFontSize = isMobile ? 24 : 26; // Larger on mobile
+    const optionFontSize = isMobile ? 18 : 19;
 
     // Clear canvas with dark background
     ctx.fillStyle = spotlightConfig.backgroundColor;
@@ -137,13 +142,13 @@ export default function SpotlightQuestion({
     });
 
     // Add extra space after question
-    y += isMobile ? 10 : 15;
+    y += isMobile ? 20 : 15;
 
     // Draw marks indicator
-    ctx.font = `${isMobile ? 14 : 16}px sans-serif`;
+    ctx.font = `${isMobile ? 15 : 16}px sans-serif`;
     ctx.fillStyle = '#aaa';
     ctx.fillText(`[${question.marks} mark${question.marks > 1 ? 's' : ''}]`, padding, y);
-    y += isMobile ? 50 : 50;
+    y += isMobile ? 60 : 50;
 
     // Draw options in grid (2x2 on desktop, 1 column on mobile)
     const options = question.options;
@@ -178,9 +183,9 @@ export default function SpotlightQuestion({
       const optionMaxWidth = gridWidth - optionPadding * 2;
       const optionLines = wrapText(ctx, optionText, optionMaxWidth);
       
-      // Draw each line of option text
+      // Draw each line of option text with more spacing
       optionLines.forEach((line, idx) => {
-        const lineY = y_pos + optionPadding + idx * (isMobile ? 24 : 24);
+        const lineY = y_pos + optionPadding + idx * (isMobile ? 26 : 24);
         ctx.fillText(line, x + optionPadding, lineY);
       });
     }
@@ -279,9 +284,9 @@ export default function SpotlightQuestion({
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
     
-    // Set canvas size based on device
+    // Set canvas size based on device - much taller for mobile
     const isMobile = rect.width < 600;
-    const canvasHeight = isMobile ? Math.max(1000, window.innerHeight * 0.8) : 800;
+    const canvasHeight = isMobile ? 1400 : 800; // Much taller on mobile
     
     canvas.width = rect.width * dpr;
     canvas.height = canvasHeight * dpr;
@@ -304,12 +309,13 @@ export default function SpotlightQuestion({
     const handleResize = () => {
       const rect = canvas.getBoundingClientRect();
       const isMobile = rect.width < 600;
-      const canvasHeight = isMobile ? Math.max(1000, window.innerHeight * 0.8) : 800;
+      const canvasHeight = isMobile ? 1400 : 800;
       
       canvas.width = rect.width * dpr;
       canvas.height = canvasHeight * dpr;
       canvas.style.height = `${canvasHeight}px`;
       
+      const ctx = canvas.getContext('2d');
       ctx.scale(dpr, dpr);
     };
 
@@ -354,7 +360,7 @@ export default function SpotlightQuestion({
   }, [canvasReady, question, selectedOption]);
 
   return (
-    <div style={{ position: 'relative', width: '100%', minHeight: '700px' }}>
+    <div style={{ position: 'relative', width: '100%' }}>
       <canvas
         ref={canvasRef}
         onMouseMove={handlePointerMove}
@@ -362,9 +368,7 @@ export default function SpotlightQuestion({
         onTouchEnd={handleCanvasClick}
         style={{
           width: '100%',
-          height: '100%',
-          minHeight: '700px',
-          maxHeight: '95vh',
+          height: 'auto',
           display: 'block',
           cursor: 'pointer',
           touchAction: 'none',
