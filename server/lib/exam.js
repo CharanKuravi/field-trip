@@ -14,9 +14,9 @@ async function login({ ip, json }) {
   const b = await needJson(json), email = normEmail(b.email), roll = normRoll(b.password);
   await limitLoginGlobal();                                   // system-wide cap; clients auto-retry on 'busy'
   await assertLoginAllowed(email, ip);                        // per-email / per-IP lockout (failures only)
-  const snap = EMAIL_RE.test(email) ? await P.doc(email).get() : null, d = snap?.exists ? snap.data() : null;
+  const snap = await P.doc(email).get(), d = snap?.exists ? snap.data() : null;
   if (!d || !checkRoll(email, roll, env('PROCTOR_PEPPER'), d.pwHash)) {
-    await recordLoginFailure(email, ip); throw new HttpError(401, 'Invalid email or roll number');
+    await recordLoginFailure(email, ip); throw new HttpError(401, 'Invalid username or password');
   }
   const sid = randomBytes(16).toString('hex');                // a newer login replaces sid -> older session gets 401
   await P.doc(email).update({ sid });
