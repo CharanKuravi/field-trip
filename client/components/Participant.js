@@ -89,9 +89,10 @@ export default function Participant({ onLogout }) {
       <p><b>{me.questions}</b> questions · <b>{me.duration_minutes}</b> minutes</p>
       <ul className="steps">
         <li><span>The exam runs in <b>fullscreen</b>. Leaving fullscreen, switching tabs or windows, or losing focus is recorded as a violation.</span></li>
-        <li><span>Right-click, copy, cut and paste are blocked. <b>Every attempt is recorded as a violation.</b></span></li>
+        <li><span>Right-click, copy, cut and paste are <b>disabled for security</b>.</span></li>
         <li><span><b>{me.max_violations || '∞'} violations</b> = automatic submission.</span></li>
         <li><span>The timer is controlled by the server. Refreshing will not reset it.</span></li>
+        <li><span><b>Click "Allow" when prompted</b> to enter fullscreen mode.</span></li>
       </ul>
       {!me.is_open && <p className="err">This exam is not open yet. Keep this page open – it unlocks automatically.</p>}
       <button style={{ width: '100%' }} disabled={!me.is_open || starting} onClick={begin}>

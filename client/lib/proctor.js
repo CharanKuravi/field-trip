@@ -36,16 +36,18 @@ export const Proctor = (() => {
     if (navigator.keyboard && navigator.keyboard.lock)
       navigator.keyboard.lock(['Escape', 'Tab', 'MetaLeft', 'MetaRight', 'AltLeft', 'AltRight']).catch(() => {});
     ['contextmenu', 'dragstart', 'selectstart'].forEach((e) => on(document, e, (ev) => ev.preventDefault()));
-    on(document, 'copy', (ev) => { ev.preventDefault(); fire('copy_attempt', 'Copy attempted'); });
-    on(document, 'cut', (ev) => { ev.preventDefault(); fire('cut_attempt', 'Cut attempted'); });
-    on(document, 'paste', (ev) => { ev.preventDefault(); fire('paste_attempt', 'Paste attempted'); });
+    // Block copy/paste/cut but don't count as violations (just silently prevent)
+    on(document, 'copy', (ev) => ev.preventDefault());
+    on(document, 'cut', (ev) => ev.preventDefault());
+    on(document, 'paste', (ev) => ev.preventDefault());
     on(document, 'keydown', (e) => {
       const k = e.key, ctrl = e.ctrlKey || e.metaKey;
       if (k === 'PrintScreen') { e.preventDefault(); fire('screenshot_attempt', 'Print Screen pressed'); return; }
       if (e.altKey && k.toLowerCase() === 'g') { e.preventDefault(); fire('shortcut_blocked', 'Alt+G pressed'); return; }
-      if (ctrl && k.toLowerCase() === 'c') { e.preventDefault(); fire('copy_attempt', 'Ctrl+C pressed'); return; }
-      if (ctrl && k.toLowerCase() === 'v') { e.preventDefault(); fire('paste_attempt', 'Ctrl+V pressed'); return; }
-      if (ctrl && k.toLowerCase() === 'x') { e.preventDefault(); fire('cut_attempt', 'Ctrl+X pressed'); return; }
+      // Block Ctrl+C/V/X silently without violation
+      if (ctrl && k.toLowerCase() === 'c') { e.preventDefault(); return; }
+      if (ctrl && k.toLowerCase() === 'v') { e.preventDefault(); return; }
+      if (ctrl && k.toLowerCase() === 'x') { e.preventDefault(); return; }
       if (ctrl && 'uspawtn'.includes(k.toLowerCase()) && k.length === 1) e.preventDefault();
       if (ctrl && e.shiftKey && 'ijc'.includes(k.toLowerCase())) { e.preventDefault(); fire('devtools_attempt', 'DevTools shortcut'); }
       if (['F12', 'F5', 'F11', 'Escape', 'Meta'].includes(k) || (e.altKey && ['F4', 'Tab'].includes(k))) e.preventDefault();
