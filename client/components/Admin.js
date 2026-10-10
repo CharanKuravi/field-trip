@@ -209,9 +209,9 @@ function Participants({ h }) {
     } catch (e) { say(e.message, true); }
   }
   async function changeRoll(p) {
-    const v = prompt(`New roll number for ${p.email}?`);
+    const v = prompt(`New password for ${p.email}?`);
     if (!v || !v.trim()) return;
-    try { await api(`/admin/participants/${encodeURIComponent(p.id)}/roll`, { method: 'PUT', body: { roll_number: v }, retries: 0 }); say(`Roll number updated for ${p.email}`); }
+    try { await api(`/admin/participants/${encodeURIComponent(p.id)}/roll`, { method: 'PUT', body: { roll_number: v }, retries: 0 }); say(`Password updated for ${p.email}`); }
     catch (e) { say(e.message, true); }
   }
   async function remove(p) {
@@ -295,12 +295,12 @@ function Participants({ h }) {
     <>
       <div className="card">
         <h2>Add participant</h2>
-        <div className="mu" style={{ marginBottom: 8 }}>Login: <b>email</b> is the username, <b>roll number</b> is the password.</div>
-        <div className="row"><input type="email" placeholder="Email (username) *" value={f.email} onChange={set('email')} /><input placeholder="Roll number (password) *" value={f.roll_number} onChange={set('roll_number')} /></div>
+        <div className="mu" style={{ marginBottom: 8 }}>Login: <b>username</b> and <b>password</b>.</div>
+        <div className="row"><input type="text" placeholder="Username *" value={f.email} onChange={set('email')} /><input placeholder="Password *" value={f.roll_number} onChange={set('roll_number')} /></div>
         <div className="row"><input placeholder="Full name (optional)" value={f.name} onChange={set('name')} /><input placeholder="Phone (optional)" value={f.phone} onChange={set('phone')} /><input placeholder="College (optional)" value={f.college} onChange={set('college')} /><button onClick={add}>Add</button></div>
         <h2 style={{ marginTop: 14 }}>Bulk upload (Excel or CSV)</h2>
         <div className="row"><input type="file" ref={file} accept=".xlsx,.csv" /><button onClick={upload}>Upload</button></div>
-        <div className="mu">First row must have headers: <span className="mono">email, roll_number</span> (optional: <span className="mono">name, phone, college</span>). Or use position: column 1 = username, column 2 = roll number. Thousands of rows are fine.</div>
+        <div className="mu">First row must have headers: <span className="mono">email, roll_number</span> (optional: <span className="mono">name, phone, college</span>). Or use position: <b>column 1 = username</b>, <b>column 2 = password</b>. Thousands of rows are fine.</div>
         {msg && <div style={{ marginTop: 8 }} className={msg.bad ? 'err' : 'ok'}>{msg.text}{(msg.extra || []).map((e, i) => <div key={i} className="err">{e}</div>)}</div>}
       </div>
       <div className="card">
@@ -322,7 +322,7 @@ function Participants({ h }) {
             {selected.size > 0 && <button className="del" onClick={deleteSelected}>Delete {selected.size} selected</button>}
           </div>
         </div>
-        <div className="mu">Roll numbers are stored hashed and can&apos;t be viewed again. Use Change roll no. to fix a typo.</div>
+        <div className="mu">Passwords are stored hashed and can&apos;t be viewed again. Use Change password to fix a typo.</div>
         {duplicates.length > 0 && (
           <div style={{ padding: '8px 12px', background: '#fff3cd', border: '1px solid #ffc107', borderRadius: 4, marginBottom: 8 }}>
             <b>Found {duplicates.length} duplicate group(s):</b>
@@ -336,13 +336,13 @@ function Participants({ h }) {
         )}
         <div className="scroll">
           <table>
-            <thead><tr><th style={{ width: 30 }}><input type="checkbox" onChange={(e) => e.target.checked ? selectAll() : deselectAll()} style={{ cursor: 'pointer' }} /></th><th>Email (username)</th><th>Name</th><th>College</th><th /></tr></thead>
+            <thead><tr><th style={{ width: 30 }}><input type="checkbox" onChange={(e) => e.target.checked ? selectAll() : deselectAll()} style={{ cursor: 'pointer' }} /></th><th>Username</th><th>Name</th><th>College</th><th /></tr></thead>
             <tbody>
               {(d?.items || []).map((p) => (
                 <tr key={p.id} style={{ background: selected.has(p.id) ? '#fff3e0' : 'transparent' }}>
                   <td><input type="checkbox" checked={selected.has(p.id)} onChange={() => toggleSelect(p.id)} style={{ cursor: 'pointer' }} /></td>
                   <td className="mono">{p.email}</td><td>{p.name}</td><td>{p.college}</td>
-                  <td><button className="sec" onClick={() => changeRoll(p)}>Change roll no.</button> <button className="del" onClick={() => remove(p)}>✕</button></td>
+                  <td><button className="sec" onClick={() => changeRoll(p)}>Change password</button> <button className="del" onClick={() => remove(p)}>✕</button></td>
                 </tr>
               ))}
               {d && !d.items.length && <tr><td colSpan={5} className="mu">No participants</td></tr>}
