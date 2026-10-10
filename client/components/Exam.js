@@ -4,8 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import { Proctor } from '../lib/proctor';
 import SpotlightQuestion from './SpotlightQuestion';
-import AccessibleQuestion from './AccessibleQuestion';
-import { getAccessibilityMode } from '../lib/spotlight-config';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const xml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -14,8 +12,6 @@ export default function Exam({ ex, onDone }) {
   // All fast-changing exam state lives in one ref; `rerender` repaints. (Keeps timers/handlers free of stale closures.)
   const R = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [spotlightMode, setSpotlightMode] = useState(ex.spotlight_enabled ?? false); // Use hackathon setting
-  const [accessibilityMode, setAccessibilityMode] = useState(false); // Accessibility override
   
   // Get spotlight settings from hackathon or use defaults
   const beamRadius = ex.spotlight_beam_radius ?? 250;
@@ -179,188 +175,69 @@ export default function Exam({ ex, onDone }) {
       <div style={{ display: 'flex', gap: 16, padding: '0 20px 20px', flexDirection: isMobile ? 'column' : 'row' }}>
         {/* Main question area */}
         <div className="wrap" style={{ flex: 1, maxWidth: '100%', margin: 0, padding: isMobile ? '0' : '20px' }}>
-          {/* Spotlight Mode Toggle (for testing/admin) */}
+          {/* Question Timer - Outside spotlight */}
           <div style={{ 
-            marginBottom: 12, 
+            marginBottom: 16, 
             display: 'flex', 
-            gap: 10, 
-            justifyContent: 'flex-end',
+            justifyContent: 'space-between',
             alignItems: 'center',
-            flexWrap: 'wrap'
+            padding: '12px 20px',
+            background: isLowTime ? '#ff6b6b' : '#4CAF50',
+            color: 'white',
+            borderRadius: '8px',
+            fontWeight: 'bold',
+            fontSize: isMobile ? 18 : 22,
+            border: '2px solid white',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
           }}>
-            <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={spotlightMode}
-                onChange={(e) => setSpotlightMode(e.target.checked)}
-                style={{ cursor: 'pointer' }}
-              />
-              <span>Spotlight Mode</span>
-            </label>
-            <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={accessibilityMode}
-                onChange={(e) => setAccessibilityMode(e.target.checked)}
-                style={{ cursor: 'pointer' }}
-              />
-              <span>Accessibility Mode</span>
-            </label>
+            <div style={{ fontSize: isMobile ? 14 : 16 }}>
+              {sectionName} - Question {isSection1 ? s.currentQuestion + 1 : s.currentQuestion - 19}
+            </div>
+            <div style={{ 
+              fontSize: isMobile ? 20 : 26,
+              minWidth: isMobile ? 70 : 90,
+              textAlign: 'center'
+            }}>
+              {timeForQuestion}s
+            </div>
           </div>
 
-          {/* Render spotlight or regular question based on mode */}
-          {accessibilityMode ? (
-            <div className="card" style={{ 
-              border: '2px solid white',
-              borderTop: '4px solid #FF9800',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              position: 'relative'
-            }}>
-              <AccessibleQuestion
-                question={currentQ}
-                onSelectOption={(key) => choose(currentQ.id, key)}
-                selectedOption={s.ans[currentQ.id]}
-                studentLabel={`${ex.pid} · ${ex.name}`}
-              />
-              {/* Show Done button when answer is selected */}
-              {s.ans[currentQ.id] && !s.answeredQuestions.has(s.currentQuestion) && (
-                <div style={{ marginTop: 20 }}>
-                  <button 
-                    onClick={markDone}
-                    style={{ 
-                      width: '100%', 
-                      padding: isMobile ? '12px' : '14px',
-                      fontSize: isMobile ? 14 : 16,
-                      fontWeight: 'bold',
-                      background: '#4CAF50',
-                      color: 'white',
-                      border: '2px solid white'
-                    }}
-                  >
-                    Done - Next Question →
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : spotlightMode ? (
-            <div className="card" style={{ 
-              border: '2px solid white',
-              borderTop: '4px solid #FF9800',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              padding: 0,
-              overflow: 'hidden'
-            }}>
-              <SpotlightQuestion
-                question={currentQ}
-                onSelectOption={(key) => choose(currentQ.id, key)}
-                selectedOption={s.ans[currentQ.id]}
-                studentLabel={`${ex.pid} · ${ex.name}`}
-                beamRadius={beamRadius}
-                softness={softness}
-              />
-              {/* Show Done button when answer is selected */}
-              {s.ans[currentQ.id] && !s.answeredQuestions.has(s.currentQuestion) && (
-                <div style={{ padding: '0 20px 20px' }}>
-                  <button 
-                    onClick={markDone}
-                    style={{ 
-                      width: '100%', 
-                      padding: isMobile ? '12px' : '14px',
-                      fontSize: isMobile ? 14 : 16,
-                      fontWeight: 'bold',
-                      background: '#4CAF50',
-                      color: 'white',
-                      border: '2px solid white'
-                    }}
-                  >
-                    Done - Next Question →
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="card" style={{ 
-              border: '2px solid white',
-              borderTop: '4px solid #FF9800',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-            }}>
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center', 
-                marginBottom: 16,
-                paddingBottom: 12,
-                borderBottom: '2px solid white',
-                flexWrap: 'wrap',
-                gap: 10
-              }}>
-                <div style={{ fontSize: isMobile ? 15 : 18, fontWeight: 'bold', color: '#333', flex: 1, minWidth: 200 }}>
-                  {sectionName} - Question {isSection1 ? s.currentQuestion + 1 : s.currentQuestion - 19}
-                </div>
-                <div style={{ 
-                  padding: isMobile ? '8px 16px' : '10px 20px', 
-                  borderRadius: 8, 
-                  background: isLowTime ? '#ff6b6b' : '#4CAF50',
-                  color: 'white',
-                  fontWeight: 'bold',
-                  fontSize: isMobile ? 18 : 20,
-                  minWidth: isMobile ? 70 : 80,
-                  textAlign: 'center',
-                  border: '2px solid white'
-                }}>
-                  {timeForQuestion}s
-                </div>
-              </div>
-              <div style={{ fontSize: isMobile ? 15 : 17, marginBottom: 24, lineHeight: 1.8, color: '#222' }}>
-                {currentQ.text}
-              </div>
-              <div style={{ fontSize: isMobile ? 12 : 14, color: '#666', marginBottom: 16 }}>
-                [{currentQ.marks} mark{currentQ.marks > 1 ? 's' : ''}]
-              </div>
-              {currentQ.options.map((o) => (
-                <label 
-                  key={o.key} 
-                  className={`opt${s.ans[currentQ.id] === o.key ? ' sel' : ''}`} 
+          {/* Spotlight Question Canvas */}
+          <div className="card" style={{ 
+            border: '2px solid white',
+            borderTop: '4px solid #FF9800',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            padding: 0,
+            overflow: 'hidden'
+          }}>
+            <SpotlightQuestion
+              question={currentQ}
+              onSelectOption={(key) => choose(currentQ.id, key)}
+              selectedOption={s.ans[currentQ.id]}
+              studentLabel={`${ex.pid} · ${ex.name}`}
+              beamRadius={beamRadius}
+              softness={softness}
+            />
+            {/* Show Done button when answer is selected */}
+            {s.ans[currentQ.id] && !s.answeredQuestions.has(s.currentQuestion) && (
+              <div style={{ padding: '0 20px 20px' }}>
+                <button 
+                  onClick={markDone}
                   style={{ 
-                    fontSize: isMobile ? 14 : 16, 
-                    padding: isMobile ? '12px 14px' : '14px 18px',
-                    marginBottom: 10,
-                    border: '2px solid white',
-                    borderRadius: 6
+                    width: '100%', 
+                    padding: isMobile ? '12px' : '14px',
+                    fontSize: isMobile ? 14 : 16,
+                    fontWeight: 'bold',
+                    background: '#4CAF50',
+                    color: 'white',
+                    border: '2px solid white'
                   }}
                 >
-                  <input 
-                    type="radio" 
-                    name={`q${currentQ.id}`} 
-                    checked={s.ans[currentQ.id] === o.key} 
-                    onChange={() => choose(currentQ.id, o.key)} 
-                    style={{ marginRight: 12 }} 
-                  />
-                  {o.text}
-                </label>
-              ))}
-              
-              {/* Show Done button when answer is selected */}
-              {s.ans[currentQ.id] && !s.answeredQuestions.has(s.currentQuestion) && (
-                <div style={{ marginTop: 20 }}>
-                  <button 
-                    onClick={markDone}
-                    style={{ 
-                      width: '100%', 
-                      padding: isMobile ? '12px' : '14px',
-                      fontSize: isMobile ? 14 : 16,
-                      fontWeight: 'bold',
-                      background: '#4CAF50',
-                      color: 'white',
-                      border: '2px solid white'
-                    }}
-                  >
-                    Done - Next Question →
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+                  Done - Next Question →
+                </button>
+              </div>
+            )}
+          </div>
         </div>
         
         {/* Question navigator on right */}
