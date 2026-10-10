@@ -208,33 +208,13 @@ export default function SpotlightQuestion({
   const drawSpotlight = (ctx, width, height) => {
     const pointer = pointerRef.current;
 
-    // Create radial gradient for spotlight effect
-    const gradient = ctx.createRadialGradient(
-      pointer.x,
-      pointer.y,
-      0,
-      pointer.x,
-      pointer.y,
-      beamRadius
-    );
-
-    // Center is transparent (visible)
-    gradient.addColorStop(0, 'rgba(10, 10, 10, 0)');
-    // Edge transitions to fully dark
-    gradient.addColorStop(1 - softness, 'rgba(10, 10, 10, 0)');
-    gradient.addColorStop(1, spotlightConfig.backgroundColor);
-
-    // Fill entire canvas with dark overlay, except spotlight area
-    ctx.fillStyle = gradient;
+    // Create a simpler, more effective spotlight
+    // First, draw a semi-transparent dark overlay
+    ctx.fillStyle = 'rgba(10, 10, 10, 0.85)';
     ctx.fillRect(0, 0, width, height);
 
-    // Add full dark overlay everywhere except spotlight
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.fillStyle = spotlightConfig.backgroundColor;
-    
-    // Draw dark mask with hole for spotlight
+    // Then punch a hole for the spotlight using destination-out
     ctx.save();
-    ctx.fillRect(0, 0, width, height);
     ctx.globalCompositeOperation = 'destination-out';
     
     const spotGradient = ctx.createRadialGradient(
@@ -245,8 +225,11 @@ export default function SpotlightQuestion({
       pointer.y,
       beamRadius
     );
+    
+    // Center is fully transparent (content visible)
     spotGradient.addColorStop(0, 'rgba(0, 0, 0, 1)');
-    spotGradient.addColorStop(1 - softness, `rgba(0, 0, 0, ${1 - softness})`);
+    // Gradual transition to opaque
+    spotGradient.addColorStop(1 - softness, 'rgba(0, 0, 0, 0.8)');
     spotGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
     
     ctx.fillStyle = spotGradient;
@@ -334,7 +317,7 @@ export default function SpotlightQuestion({
   }, [canvasReady, question, selectedOption]);
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '600px' }}>
+    <div style={{ position: 'relative', width: '100%', height: '700px' }}>
       <canvas
         ref={canvasRef}
         onMouseMove={handlePointerMove}
@@ -347,6 +330,7 @@ export default function SpotlightQuestion({
           height: '100%',
           cursor: 'pointer',
           touchAction: 'none', // Prevent default touch behaviors
+          background: spotlightConfig.backgroundColor, // Ensure background is always dark
         }}
       />
       

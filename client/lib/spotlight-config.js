@@ -3,8 +3,8 @@
 
 export const spotlightConfig = {
   // Visual settings
-  beamRadius: 110,              // Radius of the visible spotlight circle (pixels)
-  softness: 0.45,               // Edge softness (0 = hard edge, 1 = very soft)
+  beamRadius: 250,              // Radius of the visible spotlight circle (pixels)
+  softness: 0.35,               // Edge softness (0 = hard edge, 1 = very soft)
   
   // Watermark settings
   watermarkOpacity: 0.07,       // Opacity of the tiled student name watermark
