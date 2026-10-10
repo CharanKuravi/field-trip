@@ -76,8 +76,10 @@ export function paperFor(qs, hid, pid, shuffle, size = DEFAULT_PAPER_SIZE) {
 
 export function buildView(qs, hid, pid, shuffle, size = DEFAULT_PAPER_SIZE) {
   return paperFor(qs, hid, pid, shuffle, size).map((q) => {
+    // Keep options in original order (A, B, C, D) - DO NOT shuffle
     let opts = ['A', 'B', 'C', 'D'].map((k) => ({ key: k, text: q[k.toLowerCase()] }));
-    if (shuffle) opts = seededShuffle(opts, `${pid}-${q.id}`);
+    // Option shuffling disabled to prevent evaluation errors
+    // if (shuffle) opts = seededShuffle(opts, `${pid}-${q.id}`);
     return { id: q.id, text: q.text, marks: q.marks, subject: q.subject || 'general', options: opts };
   });
 }
