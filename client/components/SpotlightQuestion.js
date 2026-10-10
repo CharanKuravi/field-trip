@@ -106,11 +106,15 @@ export default function SpotlightQuestion({
 
   // Draw content on canvas
   const drawContent = (ctx, width, height) => {
-    const padding = 40;
-    const optionPadding = 20;
-    const lineHeight = 32;
-    const optionHeight = 70;
-    const optionSpacing = 15;
+    // Responsive sizing based on canvas width
+    const isMobile = width < 600;
+    const padding = isMobile ? 20 : 40;
+    const optionPadding = isMobile ? 12 : 20;
+    const lineHeight = isMobile ? 28 : 32;
+    const optionHeight = isMobile ? 80 : 70;
+    const optionSpacing = isMobile ? 10 : 15;
+    const questionFontSize = isMobile ? 20 : 26;
+    const optionFontSize = isMobile ? 16 : 19;
 
     // Clear canvas with dark background
     ctx.fillStyle = spotlightConfig.backgroundColor;
@@ -120,7 +124,7 @@ export default function SpotlightQuestion({
     ctx.textBaseline = 'top';
 
     // Draw question text (bold, large, brighter)
-    ctx.font = 'bold 26px sans-serif';
+    ctx.font = `bold ${questionFontSize}px sans-serif`;
     ctx.fillStyle = '#ffffff'; // Brighter white for question
     const questionLines = wrapText(ctx, question.text, width - padding * 2);
     let y = padding;
@@ -130,21 +134,23 @@ export default function SpotlightQuestion({
     });
 
     // Draw marks indicator
-    ctx.font = '16px sans-serif';
+    ctx.font = `${isMobile ? 14 : 16}px sans-serif`;
     ctx.fillStyle = '#aaa';
     ctx.fillText(`[${question.marks} mark${question.marks > 1 ? 's' : ''}]`, padding, y + 10);
-    y += 50;
+    y += isMobile ? 40 : 50;
 
-    // Draw options in 2x2 grid with better visibility
-    const gridWidth = (width - padding * 2 - optionSpacing) / 2;
+    // Draw options in grid (2x2 on desktop, 1 column on mobile)
     const options = question.options;
     const optionRects = [];
+    
+    const cols = isMobile ? 1 : 2;
+    const gridWidth = isMobile ? (width - padding * 2) : (width - padding * 2 - optionSpacing) / 2;
 
-    ctx.font = '19px sans-serif';
+    ctx.font = `${optionFontSize}px sans-serif`;
     for (let i = 0; i < options.length; i++) {
       const opt = options[i];
-      const col = i % 2;
-      const row = Math.floor(i / 2);
+      const col = i % cols;
+      const row = Math.floor(i / cols);
       const x = padding + col * (gridWidth + optionSpacing);
       const y_pos = y + row * (optionHeight + optionSpacing);
 
@@ -165,7 +171,7 @@ export default function SpotlightQuestion({
       const optionText = `${opt.key}) ${opt.text}`;
       const optionLines = wrapText(ctx, optionText, gridWidth - optionPadding * 2);
       optionLines.forEach((line, idx) => {
-        ctx.fillText(line, x + optionPadding, y_pos + optionPadding + idx * 24);
+        ctx.fillText(line, x + optionPadding, y_pos + optionPadding + idx * (isMobile ? 22 : 24));
       });
     }
 
@@ -326,7 +332,7 @@ export default function SpotlightQuestion({
   }, [canvasReady, question, selectedOption]);
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '700px' }}>
+    <div style={{ position: 'relative', width: '100%', height: 'auto', minHeight: '600px' }}>
       <canvas
         ref={canvasRef}
         onMouseMove={handlePointerMove}
@@ -334,7 +340,8 @@ export default function SpotlightQuestion({
         onTouchEnd={handleCanvasClick}
         style={{
           width: '100%',
-          height: '100%',
+          height: '800px', // Taller for mobile to fit single-column options
+          maxHeight: '90vh',
           cursor: 'pointer',
           touchAction: 'none', // Prevent default touch behaviors
           background: spotlightConfig.backgroundColor, // Ensure background is always dark

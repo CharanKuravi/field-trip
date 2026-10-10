@@ -83,6 +83,16 @@ export default function Exam({ ex, onDone }) {
       rerender();
     }
   }
+  
+  function canAccessQuestion(index) {
+    const s = R.current;
+    // Can only access current question or future questions that haven't been started
+    // Cannot access if: answered, time expired, or it's a past question
+    if (s.answeredQuestions.has(index)) return false; // Already answered and locked
+    if (s.questionTimeLeft[index] === 0 && index !== s.currentQuestion) return false; // Timer expired
+    if (index > s.currentQuestion) return false; // Future question not yet reached
+    return true; // Current question
+  }
 
   async function finish() {
     const s = R.current;
@@ -107,10 +117,18 @@ export default function Exam({ ex, onDone }) {
         s.questionTimeLeft[s.currentQuestion] -= 1;
         
         // Auto-advance to next question when time runs out
-        if (s.questionTimeLeft[s.currentQuestion] === 0 && s.currentQuestion < ex.questions.length - 1) {
-          s.currentQuestion += 1;
-          // Reset timer for next question
-          s.questionTimeLeft[s.currentQuestion] = s.questionTimers[s.currentQuestion];
+        if (s.questionTimeLeft[s.currentQuestion] === 0) {
+          // Mark current question as locked due to timeout
+          if (!s.answeredQuestions.has(s.currentQuestion)) {
+            s.answeredQuestions.add(s.currentQuestion); // Lock it
+          }
+          
+          // Move to next question if available
+          if (s.currentQuestion < ex.questions.length - 1) {
+            s.currentQuestion += 1;
+            // Reset timer for next question
+            s.questionTimeLeft[s.currentQuestion] = s.questionTimers[s.currentQuestion];
+          }
         }
       }
       
@@ -256,26 +274,30 @@ export default function Exam({ ex, onDone }) {
                 Section 1: AWS (1-20)
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
-                {ex.questions.slice(0, 20).map((q, i) => (
-                  <button
-                    key={q.id}
-                    onClick={() => { if (!s.answeredQuestions.has(i)) { s.currentQuestion = i; rerender(); } }}
-                    disabled={i > s.currentQuestion || s.answeredQuestions.has(i)}
-                    style={{
-                      padding: '10px 4px',
-                      fontSize: 13,
-                      fontWeight: i === s.currentQuestion ? 'bold' : 'normal',
-                      background: s.answeredQuestions.has(i) ? '#2196F3' : i === s.currentQuestion ? '#FF9800' : s.ans[q.id] ? '#4CAF50' : '#f5f5f5',
-                      color: s.answeredQuestions.has(i) || i === s.currentQuestion || s.ans[q.id] ? 'white' : i > s.currentQuestion ? '#ccc' : '#333',
-                      border: '2px solid white',
-                      borderRadius: 4,
-                      cursor: s.answeredQuestions.has(i) || i > s.currentQuestion ? 'not-allowed' : 'pointer',
-                      opacity: i > s.currentQuestion ? 0.5 : 1
-                    }}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
+                {ex.questions.slice(0, 20).map((q, i) => {
+                  const isLocked = s.answeredQuestions.has(i) || (s.questionTimeLeft[i] === 0 && i !== s.currentQuestion);
+                  return (
+                    <button
+                      key={q.id}
+                      onClick={() => { if (canAccessQuestion(i)) { s.currentQuestion = i; rerender(); } }}
+                      disabled={!canAccessQuestion(i)}
+                      style={{
+                        padding: '10px 4px',
+                        fontSize: 13,
+                        fontWeight: i === s.currentQuestion ? 'bold' : 'normal',
+                        background: isLocked ? '#888' : i === s.currentQuestion ? '#FF9800' : s.ans[q.id] ? '#4CAF50' : '#f5f5f5',
+                        color: isLocked || i === s.currentQuestion || s.ans[q.id] ? 'white' : '#333',
+                        border: '2px solid white',
+                        borderRadius: 4,
+                        cursor: canAccessQuestion(i) ? 'pointer' : 'not-allowed',
+                        opacity: canAccessQuestion(i) ? 1 : 0.5
+                      }}
+                      title={isLocked ? 'Locked (time expired or completed)' : ''}
+                    >
+                      {i + 1}
+                    </button>
+                  );
+                })}
               </div>
             </div>
             
@@ -287,22 +309,24 @@ export default function Exam({ ex, onDone }) {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
                 {ex.questions.slice(20, 30).map((q, i) => {
                   const actualIndex = i + 20;
+                  const isLocked = s.answeredQuestions.has(actualIndex) || (s.questionTimeLeft[actualIndex] === 0 && actualIndex !== s.currentQuestion);
                   return (
                     <button
                       key={q.id}
-                      onClick={() => { if (!s.answeredQuestions.has(actualIndex)) { s.currentQuestion = actualIndex; rerender(); } }}
-                      disabled={actualIndex > s.currentQuestion || s.answeredQuestions.has(actualIndex)}
+                      onClick={() => { if (canAccessQuestion(actualIndex)) { s.currentQuestion = actualIndex; rerender(); } }}
+                      disabled={!canAccessQuestion(actualIndex)}
                       style={{
                         padding: '10px 4px',
                         fontSize: 13,
                         fontWeight: actualIndex === s.currentQuestion ? 'bold' : 'normal',
-                        background: s.answeredQuestions.has(actualIndex) ? '#2196F3' : actualIndex === s.currentQuestion ? '#FF9800' : s.ans[q.id] ? '#4CAF50' : '#f5f5f5',
-                        color: s.answeredQuestions.has(actualIndex) || actualIndex === s.currentQuestion || s.ans[q.id] ? 'white' : actualIndex > s.currentQuestion ? '#ccc' : '#333',
+                        background: isLocked ? '#888' : actualIndex === s.currentQuestion ? '#FF9800' : s.ans[q.id] ? '#4CAF50' : '#f5f5f5',
+                        color: isLocked || actualIndex === s.currentQuestion || s.ans[q.id] ? 'white' : '#333',
                         border: '2px solid white',
                         borderRadius: 4,
-                        cursor: s.answeredQuestions.has(actualIndex) || actualIndex > s.currentQuestion ? 'not-allowed' : 'pointer',
-                        opacity: actualIndex > s.currentQuestion ? 0.5 : 1
+                        cursor: canAccessQuestion(actualIndex) ? 'pointer' : 'not-allowed',
+                        opacity: canAccessQuestion(actualIndex) ? 1 : 0.5
                       }}
+                      title={isLocked ? 'Locked (time expired or completed)' : ''}
                     >
                       {actualIndex + 1}
                     </button>
@@ -317,20 +341,16 @@ export default function Exam({ ex, onDone }) {
                 <span>Selected</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                <div style={{ width: 16, height: 16, background: '#2196F3', borderRadius: 2, border: '1px solid white' }}></div>
-                <span>Completed</span>
+                <div style={{ width: 16, height: 16, background: '#888', borderRadius: 2, border: '1px solid white' }}></div>
+                <span>Locked (timer expired)</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                 <div style={{ width: 16, height: 16, background: '#FF9800', borderRadius: 2, border: '1px solid white' }}></div>
                 <span>Current</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                <div style={{ width: 16, height: 16, background: '#f5f5f5', border: '2px solid white', borderRadius: 2 }}></div>
-                <span>Not answered</span>
-              </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <div style={{ width: 16, height: 16, background: '#f5f5f5', border: '2px solid white', borderRadius: 2, opacity: 0.5 }}></div>
-                <span>Locked</span>
+                <span>Not answered</span>
               </div>
             </div>
           </div>
