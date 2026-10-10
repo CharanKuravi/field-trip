@@ -106,19 +106,20 @@ export default function SpotlightQuestion({
   const drawContent = (ctx, width, height) => {
     const padding = 40;
     const optionPadding = 20;
-    const lineHeight = 30;
-    const optionHeight = 60;
+    const lineHeight = 32;
+    const optionHeight = 70;
     const optionSpacing = 15;
 
-    // Clear canvas
+    // Clear canvas with dark background
     ctx.fillStyle = spotlightConfig.backgroundColor;
     ctx.fillRect(0, 0, width, height);
 
     ctx.fillStyle = spotlightConfig.textColor;
     ctx.textBaseline = 'top';
 
-    // Draw question text (bold, large)
-    ctx.font = 'bold 24px sans-serif';
+    // Draw question text (bold, large, brighter)
+    ctx.font = 'bold 26px sans-serif';
+    ctx.fillStyle = '#ffffff'; // Brighter white for question
     const questionLines = wrapText(ctx, question.text, width - padding * 2);
     let y = padding;
     questionLines.forEach((line) => {
@@ -128,16 +129,16 @@ export default function SpotlightQuestion({
 
     // Draw marks indicator
     ctx.font = '16px sans-serif';
-    ctx.fillStyle = '#888';
+    ctx.fillStyle = '#aaa';
     ctx.fillText(`[${question.marks} mark${question.marks > 1 ? 's' : ''}]`, padding, y + 10);
     y += 50;
 
-    // Draw options in 2x2 grid
+    // Draw options in 2x2 grid with better visibility
     const gridWidth = (width - padding * 2 - optionSpacing) / 2;
     const options = question.options;
     const optionRects = [];
 
-    ctx.font = '18px sans-serif';
+    ctx.font = '19px sans-serif';
     for (let i = 0; i < options.length; i++) {
       const opt = options[i];
       const col = i % 2;
@@ -148,23 +149,21 @@ export default function SpotlightQuestion({
       // Store rectangle for hit testing
       optionRects.push({ x, y: y_pos, w: gridWidth, h: optionHeight, key: opt.key });
 
-      // Draw option background
-      ctx.fillStyle = selectedOption === opt.key ? spotlightConfig.optionHighlight : '#1a1a1a';
+      // Draw option background (brighter)
+      ctx.fillStyle = selectedOption === opt.key ? spotlightConfig.optionHighlight : '#2a2a2a';
       ctx.fillRect(x, y_pos, gridWidth, optionHeight);
 
       // Draw option border (highlight if selected)
-      if (selectedOption === opt.key) {
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(x, y_pos, gridWidth, optionHeight);
-      }
+      ctx.strokeStyle = selectedOption === opt.key ? '#66bb6a' : '#444';
+      ctx.lineWidth = selectedOption === opt.key ? 3 : 2;
+      ctx.strokeRect(x, y_pos, gridWidth, optionHeight);
 
-      // Draw option text
-      ctx.fillStyle = spotlightConfig.textColor;
+      // Draw option text (brighter)
+      ctx.fillStyle = selectedOption === opt.key ? '#ffffff' : '#e8e8e8';
       const optionText = `${opt.key}) ${opt.text}`;
       const optionLines = wrapText(ctx, optionText, gridWidth - optionPadding * 2);
       optionLines.forEach((line, idx) => {
-        ctx.fillText(line, x + optionPadding, y_pos + optionPadding + idx * 22);
+        ctx.fillText(line, x + optionPadding, y_pos + optionPadding + idx * 24);
       });
     }
 

@@ -14,8 +14,12 @@ export default function Exam({ ex, onDone }) {
   // All fast-changing exam state lives in one ref; `rerender` repaints. (Keeps timers/handlers free of stale closures.)
   const R = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [spotlightMode, setSpotlightMode] = useState(true); // Toggle for spotlight mode
+  const [spotlightMode, setSpotlightMode] = useState(ex.spotlight_enabled ?? false); // Use hackathon setting
   const [accessibilityMode, setAccessibilityMode] = useState(false); // Accessibility override
+  
+  // Get spotlight settings from hackathon or use defaults
+  const beamRadius = ex.spotlight_beam_radius ?? 250;
+  const softness = ex.spotlight_softness ?? 0.35;
   
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth <= 768);
@@ -251,6 +255,8 @@ export default function Exam({ ex, onDone }) {
                 onSelectOption={(key) => choose(currentQ.id, key)}
                 selectedOption={s.ans[currentQ.id]}
                 studentLabel={`${ex.pid} · ${ex.name}`}
+                beamRadius={beamRadius}
+                softness={softness}
               />
               {/* Show Done button when answer is selected */}
               {s.ans[currentQ.id] && !s.answeredQuestions.has(s.currentQuestion) && (

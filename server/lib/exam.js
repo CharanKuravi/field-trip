@@ -51,8 +51,19 @@ async function start(c) {
   }
   const answers = d.answers ?? (await ref.get()).data().answers ?? {};    // resume: bring back saved answers
   const qs = await getQuestions(x.hid);
-  return { name: d.name, pid: x.email, questions: buildView(qs, x.hid, x.email, h.shuffle !== false, paperSize(h)), saved: flatAnswers(answers),
-    max_violations: h.max_violations, violations: d.violations || 0, seconds_left: secondsLeft(d) };
+  return { 
+    name: d.name, 
+    pid: x.email, 
+    questions: buildView(qs, x.hid, x.email, h.shuffle !== false, paperSize(h)), 
+    saved: flatAnswers(answers),
+    max_violations: h.max_violations, 
+    violations: d.violations || 0, 
+    seconds_left: secondsLeft(d),
+    // Spotlight settings
+    spotlight_enabled: h.spotlight_enabled ?? false,
+    spotlight_beam_radius: h.spotlight_beam_radius ?? 250,
+    spotlight_softness: h.spotlight_softness ?? 0.35,
+  };
 }
 
 async function active(c) {

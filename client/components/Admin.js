@@ -533,7 +533,20 @@ function Integrity({ h }) {
 }
 
 function Settings({ h, onSaved }) {
-  const [f, setF] = useState({ name: h.name, duration_minutes: h.duration_minutes, negative_marks: h.negative_marks, pass_percentage: h.pass_percentage, max_violations: h.max_violations, questions_per_participant: h.questions_per_participant ?? 30, shuffle: !!h.shuffle, is_open: !!h.is_open });
+  const [f, setF] = useState({ 
+    name: h.name, 
+    duration_minutes: h.duration_minutes, 
+    negative_marks: h.negative_marks, 
+    pass_percentage: h.pass_percentage, 
+    max_violations: h.max_violations, 
+    questions_per_participant: h.questions_per_participant ?? 30, 
+    shuffle: !!h.shuffle, 
+    is_open: !!h.is_open,
+    // Spotlight settings
+    spotlight_enabled: h.spotlight_enabled ?? false,
+    spotlight_beam_radius: h.spotlight_beam_radius ?? 250,
+    spotlight_softness: h.spotlight_softness ?? 0.35,
+  });
   const [msg, setMsg] = useState(null);
   const set = (k, num) => (e) => setF({ ...f, [k]: num ? +e.target.value : e.target.value });
   const tick = (k) => (e) => setF({ ...f, [k]: e.target.checked });
@@ -557,6 +570,41 @@ function Settings({ h, onSaved }) {
         <label><input type="checkbox" checked={f.shuffle} onChange={tick('shuffle')} style={{ minWidth: 0 }} /> Shuffle questions &amp; options per participant</label>
         <label><input type="checkbox" checked={f.is_open} onChange={tick('is_open')} style={{ minWidth: 0 }} /> <b>Open for participants</b></label>
       </div>
+      
+      <h3 style={{ marginTop: 24, marginBottom: 12 }}>🔦 Spotlight Mode (Anti-Screenshot)</h3>
+      <div className="mu" style={{ marginBottom: 12 }}>
+        Spotlight mode renders questions on canvas with a moving beam - only content inside the beam is visible, preventing screenshots.
+      </div>
+      <div className="row">
+        <label><input type="checkbox" checked={f.spotlight_enabled} onChange={tick('spotlight_enabled')} style={{ minWidth: 0 }} /> Enable Spotlight Mode by default</label>
+      </div>
+      <div className="row">
+        <label>Beam Radius (pixels)
+          <input 
+            type="number" 
+            min="100" 
+            max="500" 
+            step="10"
+            value={f.spotlight_beam_radius} 
+            onChange={set('spotlight_beam_radius', true)} 
+          />
+        </label>
+        <label>Edge Softness (0-1)
+          <input 
+            type="number" 
+            min="0" 
+            max="1" 
+            step="0.05"
+            value={f.spotlight_softness} 
+            onChange={set('spotlight_softness', true)} 
+          />
+        </label>
+      </div>
+      <div className="mu" style={{ marginBottom: 12, fontSize: 12 }}>
+        Beam Radius: 150-200 = small spotlight, 250-300 = medium (recommended), 350-400 = large<br/>
+        Edge Softness: 0.1-0.2 = sharp edge, 0.3-0.4 = medium (recommended), 0.5-0.7 = very soft
+      </div>
+      
       <button onClick={save}>Save</button> {msg && <span className={msg.bad ? 'err' : 'ok'}>{msg.text}</span>}
     </div>
   );
