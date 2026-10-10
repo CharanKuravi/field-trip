@@ -77,7 +77,7 @@ export function buildView(qs, hid, pid, shuffle, size = DEFAULT_PAPER_SIZE) {
   return paperFor(qs, hid, pid, shuffle, size).map((q) => {
     let opts = ['A', 'B', 'C', 'D'].map((k) => ({ key: k, text: q[k.toLowerCase()] }));
     if (shuffle) opts = seededShuffle(opts, `${pid}-${q.id}`);
-    return { id: q.id, text: q.text, marks: q.marks, options: opts };
+    return { id: q.id, text: q.text, marks: q.marks, subject: q.subject || 'general', options: opts };
   });
 }
 

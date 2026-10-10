@@ -90,6 +90,15 @@ function Monitor({ h }) {
     return () => clearInterval(t);
   }, [load]);
 
+  const revokeExam = async (email) => {
+    if (!confirm(`Revoke exam attempt for ${email}?\n\nThis will:\n- Clear their submission\n- Reset their score and violations\n- Allow them to retake the exam`)) return;
+    try {
+      await api(`/admin/participants/${encodeURIComponent(email)}/revoke`, { method: 'POST' });
+      alert('Exam attempt revoked successfully! The student can now retake the exam.');
+      load();
+    } catch (e) { setErr(e.message); }
+  };
+
   const s = m?.summary;
   return (
     <>
@@ -114,7 +123,7 @@ function Monitor({ h }) {
         </div>
         <div className="scroll">
           <table>
-            <thead><tr><th>Email</th><th>Name</th><th>College</th><th>Status</th><th>Score</th><th>Copy/paste</th><th>Tab/screen</th><th>Other</th><th>Violations</th><th>Last seen</th><th>IP</th></tr></thead>
+            <thead><tr><th>Email</th><th>Name</th><th>College</th><th>Status</th><th>Score</th><th>Copy/paste</th><th>Tab/screen</th><th>Other</th><th>Violations</th><th>Last seen</th><th>IP</th><th>Actions</th></tr></thead>
             <tbody>
               {(m?.participants || []).map((p) => (
                 <tr key={p.pid}>
@@ -127,9 +136,16 @@ function Monitor({ h }) {
                   <td className={p.violations ? 'v' : ''}>{p.violations}</td>
                   <td>{p.online ? <span className="ok">● online</span> : p.last_seen ? new Date(p.last_seen).toLocaleTimeString() : '–'}</td>
                   <td className="mono">{p.ip}</td>
+                  <td>
+                    {p.status === 'submitted' && (
+                      <button className="sec" onClick={() => revokeExam(p.pid)} title="Allow student to retake exam">
+                        ↻ Revoke
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
-              {m && !m.participants.length && <tr><td colSpan={11} className="mu">No matches</td></tr>}
+              {m && !m.participants.length && <tr><td colSpan={12} className="mu">No matches</td></tr>}
             </tbody>
           </table>
         </div>
@@ -451,6 +467,7 @@ function Questions({ h }) {
               </div>
             </div>
             <button className="sec" onClick={findDuplicates}>Find duplicates</button>
+            <button className="sec" onClick={() => window.open(`${API}/admin/hackathons/${hid}/questions/export.csv`, '_blank')}>Export questions</button>
             {duplicates.length > 0 && <button className="sec" onClick={selectDuplicates}>Select duplicates</button>}
             {selected.size > 0 && <button className="del" onClick={deleteSelected}>Delete {selected.size} selected</button>}
           </div>

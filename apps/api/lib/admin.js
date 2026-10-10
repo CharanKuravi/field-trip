@@ -142,6 +142,36 @@ const delPart = A(async ({ params }) => {
   await P.doc(params.email).delete(); dropRoster(snap.data().hid); return { ok: true };
 });
 
+const revokeAttempt = A(async ({ params }) => {
+  const snap = await P.doc(params.email).get(); 
+  if (!snap.exists) throw new HttpError(404, 'Participant not found');
+  
+  // Reset exam attempt - clear submission and allow retake
+  await P.doc(params.email).update({
+    startedAt: null,
+    deadline: null,
+    submittedAt: null,
+    answers: {},
+    score: null,
+    total: null,
+    violations: 0,
+    vtypes: {},
+    autoSubmitted: null,
+    lastSeen: null
+  });
+  
+  // Clear all events for this participant
+  const evs = await EV.where('pid', '==', params.email).get();
+  for (let i = 0; i < evs.docs.length; i += 400) { 
+    const b = db.batch(); 
+    evs.docs.slice(i, i + 400).forEach((d) => b.delete(d.ref)); 
+    await b.commit(); 
+  }
+  
+  dropRoster(snap.data().hid); 
+  return { ok: true, message: 'Exam attempt revoked successfully' };
+});
+
 // ── questions ──
 function qFields(x) {
   const q = { text: String(x.text ?? '').trim(), a: String(x.a ?? '').trim(), b: String(x.b ?? '').trim(), c: String(x.c ?? '').trim(), d: String(x.d ?? '').trim(),
@@ -231,7 +261,9 @@ export const adminRoutes = [
   ['GET', '/admin/hackathons', listHacks], ['POST', '/admin/hackathons', createHack], ['PUT', '/admin/hackathons/:hid', updateHack],
   ['GET', '/admin/hackathons/:hid/participants', listParts], ['POST', '/admin/hackathons/:hid/participants', addPart],
   ['POST', '/admin/hackathons/:hid/participants/upload', uploadParts],
-  ['PUT', '/admin/participants/:email/roll', changeRoll], ['DELETE', '/admin/participants/:email', delPart],
+  ['PUT', '/admin/participants/:email/roll', changeRoll], 
+  ['POST', '/admin/participants/:email/revoke', revokeAttempt],
+  ['DELETE', '/admin/participants/:email', delPart],
   ['GET', '/admin/hackathons/:hid/questions', listQs], ['POST', '/admin/hackathons/:hid/questions', addQ],
   ['POST', '/admin/hackathons/:hid/questions/upload', uploadQs], ['DELETE', '/admin/hackathons/:hid/questions/:qid', delQ],
   ['GET', '/admin/hackathons/:hid/questions/export.csv', exportQuestions],

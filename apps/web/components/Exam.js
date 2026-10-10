@@ -9,7 +9,25 @@ const xml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 export default function Exam({ ex, onDone }) {
   // All fast-changing exam state lives in one ref; `rerender` repaints. (Keeps timers/handlers free of stale closures.)
   const R = useRef(null);
-  if (R.current === null) R.current = { ans: { ...ex.saved }, pend: new Map(), flushing: false, finished: false, left: ex.seconds_left, violations: ex.violations, timer: null, hb: null };
+  if (R.current === null) R.current = { 
+    ans: { ...ex.saved }, 
+    pend: new Map(), 
+    flushing: false, 
+    finished: false, 
+    left: ex.seconds_left, 
+    violations: ex.violations, 
+    timer: null, 
+    hb: null,
+    currentQuestion: 0,
+    questionTimers: ex.questions.map((q) => {
+      const subject = (q.subject || 'general').toLowerCase();
+      return subject === 'aws' ? 15 : subject === 'aptitude' || subject === 'apti' ? 30 : 30;
+    }),
+    questionTimeLeft: ex.questions.map((q) => {
+      const subject = (q.subject || 'general').toLowerCase();
+      return subject === 'aws' ? 15 : subject === 'aptitude' || subject === 'apti' ? 30 : 30;
+    })
+  };
   const [, setTick] = useState(0);
   const rerender = () => setTick((n) => n + 1);
   const [toast, setToast] = useState('');
@@ -50,7 +68,24 @@ export default function Exam({ ex, onDone }) {
     const s = R.current;
     try { JSON.parse(localStorage.getItem(lsk) || '[]').forEach(([k, v]) => { if (s.ans[k] !== v) { s.ans[k] = v; s.pend.set(k, v); } }); } catch {}
     if (s.pend.size) flushAns();
-    s.timer = setInterval(() => { s.left -= 1; if (s.left <= 0) { flash('Time is up – submitting'); finish(); } rerender(); }, 1000);
+    s.timer = setInterval(() => { 
+      s.left -= 1; 
+      
+      // Decrease time for current question
+      if (s.questionTimeLeft[s.currentQuestion] > 0) {
+        s.questionTimeLeft[s.currentQuestion] -= 1;
+        
+        // Auto-advance to next question when time runs out
+        if (s.questionTimeLeft[s.currentQuestion] === 0 && s.currentQuestion < ex.questions.length - 1) {
+          s.currentQuestion += 1;
+          // Reset timer for next question
+          s.questionTimeLeft[s.currentQuestion] = s.questionTimers[s.currentQuestion];
+        }
+      }
+      
+      if (s.left <= 0) { flash('Time is up – submitting'); finish(); } 
+      rerender(); 
+    }, 1000);
     // heartbeat ~every 10 s with a per-client random period, so thousands of browsers drift apart instead of syncing up
     s.hb = setInterval(async () => {
       if (s.pend.size) flushAns();
@@ -88,17 +123,48 @@ export default function Exam({ ex, onDone }) {
         <button onClick={() => { const un = ex.questions.length - answered; if (!un || confirm(`${un} unanswered. Submit anyway?`)) finish(); }}>Submit</button>
       </div>
       <div className="wrap">
-        {ex.questions.map((q, i) => (
-          <div className="card" key={q.id}>
-            <b>Q{i + 1}.</b> {q.text} <span className="mu">[{q.marks} mk]</span>
-            {q.options.map((o) => (
-              <label key={o.key} className={`opt${s.ans[q.id] === o.key ? ' sel' : ''}`}>
-                <input type="radio" name={`q${q.id}`} checked={s.ans[q.id] === o.key} onChange={() => choose(q.id, o.key)} style={{ marginRight: 8 }} />
-                {o.text}
-              </label>
-            ))}
-          </div>
-        ))}
+        {ex.questions.map((q, i) => {
+          const subject = (q.subject || 'general').toLowerCase();
+          const timeForQuestion = s.questionTimeLeft[i];
+          const isLowTime = timeForQuestion <= 5;
+          
+          return (
+            <div className="card" key={q.id} style={{ opacity: i === s.currentQuestion ? 1 : 0.6, pointerEvents: i === s.currentQuestion ? 'auto' : 'none' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <div>
+                  <b>Q{i + 1}.</b> {q.text} <span className="mu">[{q.marks} mk]</span>
+                  {subject !== 'general' && <span className="mu" style={{ marginLeft: 8, textTransform: 'capitalize' }}>({subject})</span>}
+                </div>
+                <div style={{ 
+                  padding: '4px 12px', 
+                  borderRadius: 4, 
+                  background: isLowTime ? '#ff6b6b' : '#4CAF50',
+                  color: 'white',
+                  fontWeight: 'bold',
+                  fontSize: 14,
+                  minWidth: 60,
+                  textAlign: 'center'
+                }}>
+                  {timeForQuestion}s
+                </div>
+              </div>
+              {q.options.map((o) => (
+                <label key={o.key} className={`opt${s.ans[q.id] === o.key ? ' sel' : ''}`}>
+                  <input type="radio" name={`q${q.id}`} checked={s.ans[q.id] === o.key} onChange={() => choose(q.id, o.key)} style={{ marginRight: 8 }} />
+                  {o.text}
+                </label>
+              ))}
+              {i === s.currentQuestion && i < ex.questions.length - 1 && (
+                <button 
+                  onClick={() => { s.currentQuestion = i + 1; s.questionTimeLeft[i + 1] = s.questionTimers[i + 1]; rerender(); }}
+                  style={{ marginTop: 12 }}
+                >
+                  Next Question →
+                </button>
+              )}
+            </div>
+          );
+        })}
       </div>
       {fsLost && (
         <div className="overlay"><div>
