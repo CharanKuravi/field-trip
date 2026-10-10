@@ -7,8 +7,23 @@ export const env = (name) => {
   return v;
 };
 
-// CORS: the frontend lives on a different origin (Vercel). We use Bearer tokens (no cookies), so no credentials are needed.
-const allowed = () => (process.env.ALLOWED_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
+// CORS: the frontend lives on a different origin. We use Bearer tokens (no cookies), so no credentials are needed.
+const allowed = () => {
+  const origins = (process.env.ALLOWED_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
+  
+  // If no origins configured, allow common development and production origins
+  if (origins.length === 0) {
+    return [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'https://aws-codeathon-proctor.netlify.app',
+      'https://aws-codeathon-quiz.onrender.com',
+    ];
+  }
+  
+  return origins;
+};
+
 export function corsHeaders(req) {
   const origin = req.headers.get('origin'), list = allowed();
   const h = { Vary: 'Origin' };
