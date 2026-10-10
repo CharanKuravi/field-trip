@@ -73,35 +73,61 @@ th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mu)}
 @media (prefers-reduced-motion:reduce){button{transition:none}}
 
 /* Mobile optimizations */
-@media (max-width: 640px){
+@media (max-width: 768px){
   body{font-size:14px}
-  .wrap{padding:12px}
-  .card{padding:16px;border-radius:16px}
-  h1{font-size:22px}
+  .wrap{padding:10px}
+  .card{padding:14px;border-radius:12px}
+  h1{font-size:20px}
   h2{font-size:15px}
-  .brand{flex-direction:column;align-items:flex-start;gap:8px}
-  .brand img{height:24px}
-  .ribbon{font-size:11px;padding:4px 12px}
-  .tagline{font-size:16px}
-  .eyebrow{font-size:15px}
-  input,select,textarea,button{padding:9px 11px;font-size:14px}
+  h3{font-size:14px;margin:0 0 8px}
+  .brand{flex-direction:column;align-items:flex-start;gap:6px}
+  .brand img{height:22px}
+  .ribbon{font-size:10px;padding:4px 10px}
+  .tagline{font-size:15px}
+  .eyebrow{font-size:14px}
+  input,select,textarea,button{padding:8px 10px;font-size:13px}
   .row{flex-direction:column}.row>*{min-width:100%}
-  .tabs{gap:4px}.tabs button{flex:1;min-width:0;font-size:13px}
-  .center{margin:4vh auto;max-width:100%!important}
+  .tabs{gap:4px}.tabs button{flex:1;min-width:0;font-size:12px;padding:6px 8px}
+  .center{margin:2vh auto;max-width:100%!important;padding:0 10px}
   .top{flex-direction:column;align-items:stretch}
-  table{font-size:12px}
-  th,td{padding:6px 8px;font-size:11px}
+  table{font-size:11px}
+  th,td{padding:5px 6px;font-size:10px}
   .scroll{overflow-x:scroll;-webkit-overflow-scrolling:touch}
-  .bar{padding:8px 12px;gap:8px;font-size:13px;flex-wrap:wrap}
-  .bar .mono{font-size:15px}
-  .opt{padding:10px 12px;font-size:14px}
-  .steps li{gap:8px;padding:10px 12px;font-size:13px}
-  .steps li::before{font-size:16px}
+  
+  /* Mobile exam bar */
+  .bar{
+    padding:8px 10px;
+    gap:6px;
+    font-size:11px;
+    flex-direction:column;
+    align-items:stretch!important;
+  }
+  .bar>div:first-child{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    width:100%;
+  }
+  .bar>div:last-child{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    font-size:10px;
+    justify-content:space-between;
+  }
+  .bar>div:last-child>span{flex:0 1 auto;white-space:nowrap}
+  .bar>div:last-child>button{width:100%;margin-top:4px}
+  .bar img{height:24px}
+  .bar .mono{font-size:14px}
+  
+  .opt{padding:10px 12px;font-size:13px}
+  .steps li{gap:8px;padding:10px 12px;font-size:12px}
+  .steps li::before{font-size:15px}
   body::before{background:
-    radial-gradient(280px 220px at -60px -40px,rgba(255,138,31,.45),transparent 70%),
-    radial-gradient(260px 200px at calc(100% + 40px) -30px,rgba(255,138,31,.35),transparent 70%),
-    radial-gradient(320px 220px at 100% 100%,rgba(242,106,27,.35),transparent 70%),
-    radial-gradient(280px 200px at 0 100%,rgba(255,170,60,.30),transparent 70%),
-    linear-gradient(rgba(23,20,15,.045) 1px,transparent 1px) 0 0/20px 20px,
-    linear-gradient(90deg,rgba(23,20,15,.045) 1px,transparent 1px) 0 0/20px 20px}
+    radial-gradient(220px 180px at -50px -30px,rgba(255,138,31,.40),transparent 70%),
+    radial-gradient(200px 160px at calc(100% + 30px) -20px,rgba(255,138,31,.30),transparent 70%),
+    radial-gradient(260px 180px at 100% 100%,rgba(242,106,27,.30),transparent 70%),
+    radial-gradient(220px 160px at 0 100%,rgba(255,170,60,.25),transparent 70%),
+    linear-gradient(rgba(23,20,15,.045) 1px,transparent 1px) 0 0/18px 18px,
+    linear-gradient(90deg,rgba(23,20,15,.045) 1px,transparent 1px) 0 0/18px 18px}
 }

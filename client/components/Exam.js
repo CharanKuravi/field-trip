@@ -10,6 +10,15 @@ const xml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 export default function Exam({ ex, onDone }) {
   // All fast-changing exam state lives in one ref; `rerender` repaints. (Keeps timers/handlers free of stale closures.)
   const R = useRef(null);
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  
   if (R.current === null) R.current = { 
     ans: { ...ex.saved }, 
     pend: new Map(), 
@@ -145,22 +154,22 @@ export default function Exam({ ex, onDone }) {
       {/* Top Bar with AWS Logo */}
       <div className="bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <img src="https://aws-codeathon-at-gist-site.vercel.app/assets/aws-logo.png" alt="AWS" style={{ height: 32 }} />
+          <img src="https://aws-codeathon-at-gist-site.vercel.app/assets/aws-logo.png" alt="AWS" style={{ height: 32, maxWidth: 120 }} />
           <span style={{ fontSize: 18, fontWeight: 'bold' }}>- Codeathon</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-          <span><b>Section {currentSection}</b> · Question {s.currentQuestion + 1} of {ex.questions.length}</span>
-          <span>Answered <b>{answered}</b>/{ex.questions.length}</span>
-          <span className="mu">{s.pend.size ? 'Saving…' : '✓ Saved'}</span>
-          <span>Violations <span className="v">{s.violations}</span>/{ex.max_violations || '∞'}</span>
-          <span className="mono">{Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+          <span style={{ whiteSpace: 'nowrap' }}><b>Sec {currentSection}</b> · Q {s.currentQuestion + 1}/{ex.questions.length}</span>
+          <span style={{ whiteSpace: 'nowrap' }}>Ans <b>{answered}</b>/{ex.questions.length}</span>
+          <span className="mu" style={{ whiteSpace: 'nowrap' }}>{s.pend.size ? 'Saving…' : '✓'}</span>
+          <span style={{ whiteSpace: 'nowrap' }}>Viol <span className="v">{s.violations}</span>/{ex.max_violations || '∞'}</span>
+          <span className="mono" style={{ whiteSpace: 'nowrap' }}>{Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}</span>
           <button onClick={() => { const un = ex.questions.length - answered; if (!un || confirm(`${un} unanswered. Submit anyway?`)) finish(); }}>Submit</button>
         </div>
       </div>
       
-      <div style={{ display: 'flex', gap: 16, padding: '0 20px 20px' }}>
+      <div style={{ display: 'flex', gap: 16, padding: '0 20px 20px', flexDirection: isMobile ? 'column' : 'row' }}>
         {/* Main question area */}
-        <div className="wrap" style={{ flex: 1 }}>
+        <div className="wrap" style={{ flex: 1, maxWidth: '100%', margin: 0, padding: isMobile ? '0' : '20px' }}>
           <div className="card" style={{ 
             border: '2px solid white',
             borderTop: '4px solid #FF9800',
@@ -172,29 +181,31 @@ export default function Exam({ ex, onDone }) {
               alignItems: 'center', 
               marginBottom: 16,
               paddingBottom: 12,
-              borderBottom: '2px solid white'
+              borderBottom: '2px solid white',
+              flexWrap: 'wrap',
+              gap: 10
             }}>
-              <div style={{ fontSize: 18, fontWeight: 'bold', color: '#333' }}>
+              <div style={{ fontSize: isMobile ? 15 : 18, fontWeight: 'bold', color: '#333', flex: 1, minWidth: 200 }}>
                 {sectionName} - Question {isSection1 ? s.currentQuestion + 1 : s.currentQuestion - 19}
               </div>
               <div style={{ 
-                padding: '10px 20px', 
+                padding: isMobile ? '8px 16px' : '10px 20px', 
                 borderRadius: 8, 
                 background: isLowTime ? '#ff6b6b' : '#4CAF50',
                 color: 'white',
                 fontWeight: 'bold',
-                fontSize: 20,
-                minWidth: 80,
+                fontSize: isMobile ? 18 : 20,
+                minWidth: isMobile ? 70 : 80,
                 textAlign: 'center',
                 border: '2px solid white'
               }}>
                 {timeForQuestion}s
               </div>
             </div>
-            <div style={{ fontSize: 17, marginBottom: 24, lineHeight: 1.8, color: '#222' }}>
+            <div style={{ fontSize: isMobile ? 15 : 17, marginBottom: 24, lineHeight: 1.8, color: '#222' }}>
               {currentQ.text}
             </div>
-            <div style={{ fontSize: 14, color: '#666', marginBottom: 16 }}>
+            <div style={{ fontSize: isMobile ? 12 : 14, color: '#666', marginBottom: 16 }}>
               [{currentQ.marks} mark{currentQ.marks > 1 ? 's' : ''}]
             </div>
             {currentQ.options.map((o) => (
@@ -202,8 +213,8 @@ export default function Exam({ ex, onDone }) {
                 key={o.key} 
                 className={`opt${s.ans[currentQ.id] === o.key ? ' sel' : ''}`} 
                 style={{ 
-                  fontSize: 16, 
-                  padding: '14px 18px',
+                  fontSize: isMobile ? 14 : 16, 
+                  padding: isMobile ? '12px 14px' : '14px 18px',
                   marginBottom: 10,
                   border: '2px solid white',
                   borderRadius: 6
@@ -227,8 +238,8 @@ export default function Exam({ ex, onDone }) {
                   onClick={markDone}
                   style={{ 
                     width: '100%', 
-                    padding: '14px',
-                    fontSize: 16,
+                    padding: isMobile ? '12px' : '14px',
+                    fontSize: isMobile ? 14 : 16,
                     fontWeight: 'bold',
                     background: '#4CAF50',
                     color: 'white',
@@ -243,14 +254,14 @@ export default function Exam({ ex, onDone }) {
         </div>
         
         {/* Question navigator on right */}
-        <div style={{ width: 240, flexShrink: 0 }}>
+        <div style={{ width: isMobile ? '100%' : 240, flexShrink: 0 }}>
           <div className="card" style={{ 
-            position: 'sticky', 
+            position: isMobile ? 'static' : 'sticky', 
             top: 16,
             border: '2px solid white',
             borderTop: '4px solid #FF9800'
           }}>
-            <h3 style={{ marginBottom: 16, fontSize: 16, fontWeight: 'bold' }}>Question Navigator</h3>
+            <h3 style={{ marginBottom: 16, fontSize: isMobile ? 14 : 16, fontWeight: 'bold' }}>Question Navigator</h3>
             
             {/* Section 1: AWS Questions */}
             <div style={{ marginBottom: 20 }}>
