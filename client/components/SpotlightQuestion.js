@@ -40,10 +40,12 @@ export default function SpotlightQuestion({
     if (e.type === 'touchmove' || e.type === 'touchstart') {
       e.preventDefault(); // Prevent scrolling
       const touch = e.touches[0];
-      pointerRef.current = {
-        x: (touch.clientX - rect.left) * scaleX,
-        y: (touch.clientY - rect.top) * scaleY,
-      };
+      if (touch) {
+        pointerRef.current = {
+          x: (touch.clientX - rect.left) * scaleX,
+          y: (touch.clientY - rect.top) * scaleY,
+        };
+      }
     } else {
       pointerRef.current = {
         x: (e.clientX - rect.left) * scaleX,
@@ -203,19 +205,20 @@ export default function SpotlightQuestion({
     ctx.restore();
   };
 
-  // Draw spotlight overlay
+  // Draw spotlight overlay - Only show content INSIDE the beam
   const drawSpotlight = (ctx, width, height) => {
     const pointer = pointerRef.current;
 
-    // Create a simpler, more effective spotlight
-    // First, draw a semi-transparent dark overlay
-    ctx.fillStyle = 'rgba(10, 10, 10, 0.85)';
+    // Fill entire canvas with opaque dark overlay (hides everything)
+    ctx.fillStyle = spotlightConfig.backgroundColor;
     ctx.fillRect(0, 0, width, height);
 
-    // Then punch a hole for the spotlight using destination-out
+    // Use destination-out to "punch a hole" where the spotlight is
+    // This reveals the content underneath
     ctx.save();
     ctx.globalCompositeOperation = 'destination-out';
     
+    // Create radial gradient for smooth edge
     const spotGradient = ctx.createRadialGradient(
       pointer.x,
       pointer.y,
@@ -225,11 +228,11 @@ export default function SpotlightQuestion({
       beamRadius
     );
     
-    // Center is fully transparent (content visible)
-    spotGradient.addColorStop(0, 'rgba(0, 0, 0, 1)');
-    // Gradual transition to opaque
-    spotGradient.addColorStop(1 - softness, 'rgba(0, 0, 0, 0.8)');
-    spotGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    // Center is fully transparent (content fully visible)
+    spotGradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+    // Gradual fade to opaque at edge
+    spotGradient.addColorStop(1 - softness, 'rgba(255, 255, 255, 1)');
+    spotGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
     
     ctx.fillStyle = spotGradient;
     ctx.fillRect(0, 0, width, height);
@@ -305,12 +308,31 @@ export default function SpotlightQuestion({
   useEffect(() => {
     if (!canvasReady) return;
 
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    // Add touch event listeners with passive:false to allow preventDefault
+    const touchMoveHandler = (e) => {
+      e.preventDefault();
+      handlePointerMove(e);
+    };
+
+    const touchStartHandler = (e) => {
+      e.preventDefault();
+      handlePointerMove(e);
+    };
+
+    canvas.addEventListener('touchmove', touchMoveHandler, { passive: false });
+    canvas.addEventListener('touchstart', touchStartHandler, { passive: false });
+
     animate();
 
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
+      canvas.removeEventListener('touchmove', touchMoveHandler);
+      canvas.removeEventListener('touchstart', touchStartHandler);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canvasReady, question, selectedOption]);
@@ -320,8 +342,6 @@ export default function SpotlightQuestion({
       <canvas
         ref={canvasRef}
         onMouseMove={handlePointerMove}
-        onTouchMove={handlePointerMove}
-        onTouchStart={handlePointerMove}
         onClick={handleCanvasClick}
         onTouchEnd={handleCanvasClick}
         style={{
