@@ -16,7 +16,21 @@ const roster = (hid) => memo(`r:${hid}`, 4000, async () => (await P.where('hid',
 const status = (r) => (r.submittedAt ? 'submitted' : r.startedAt ? 'in_progress' : 'not_started');
 const pages = (total, per) => Math.max(1, Math.ceil(total / per));
 const same = (a, b) => { const x = Buffer.from(String(a)), y = Buffer.from(String(b)); return x.length === y.length && timingSafeEqual(x, y); };
-const hdict = (id, h) => ({ id, name: h.name, duration_minutes: h.duration_minutes, negative_marks: h.negative_marks, pass_percentage: h.pass_percentage, max_violations: h.max_violations, shuffle: h.shuffle, is_open: h.is_open, questions_per_participant: paperSize(h) });
+const hdict = (id, h) => ({ 
+  id, 
+  name: h.name, 
+  duration_minutes: h.duration_minutes, 
+  negative_marks: h.negative_marks, 
+  pass_percentage: h.pass_percentage, 
+  max_violations: h.max_violations, 
+  shuffle: h.shuffle, 
+  is_open: h.is_open, 
+  questions_per_participant: paperSize(h),
+  // Spotlight settings with defaults
+  spotlight_enabled: h.spotlight_enabled ?? false,
+  spotlight_beam_radius: h.spotlight_beam_radius ?? 250,
+  spotlight_softness: h.spotlight_softness ?? 0.35,
+});
 
 const COPY = ['copy_attempt','paste_attempt','cut_attempt'], TAB = ['tab_switch','window_blur','fullscreen_exit'];
 const vsum = (vt, keys) => keys.reduce((n, k) => n + (Number(vt?.[k]) || 0), 0);
@@ -57,9 +71,20 @@ const listHacks = A(async () => {
 const hackFields = (b) => {
   const name = String(b.name ?? '').trim(); if (!name) throw new HttpError(400, 'Name is required');
   const n = (v, d) => (Number.isFinite(Number(v)) ? Number(v) : d);
-  return { name, duration_minutes: Math.max(1, n(b.duration_minutes, 60)), negative_marks: Math.max(0, n(b.negative_marks, 0)), pass_percentage: n(b.pass_percentage, 40),
-    max_violations: Math.max(0, n(b.max_violations, 5)), shuffle: b.shuffle !== false, is_open: !!b.is_open,
-    questions_per_participant: Math.max(0, Math.floor(n(b.questions_per_participant, 30))) };
+  return { 
+    name, 
+    duration_minutes: Math.max(1, n(b.duration_minutes, 60)), 
+    negative_marks: Math.max(0, n(b.negative_marks, 0)), 
+    pass_percentage: n(b.pass_percentage, 40),
+    max_violations: Math.max(0, n(b.max_violations, 5)), 
+    shuffle: b.shuffle !== false, 
+    is_open: !!b.is_open,
+    questions_per_participant: Math.max(0, Math.floor(n(b.questions_per_participant, 30))),
+    // Spotlight settings
+    spotlight_enabled: !!b.spotlight_enabled,
+    spotlight_beam_radius: Math.max(100, Math.min(500, n(b.spotlight_beam_radius, 250))),
+    spotlight_softness: Math.max(0, Math.min(1, n(b.spotlight_softness, 0.35))),
+  };
 };
 const createHack = A(async ({ json }) => { const f = hackFields(await json()), ref = await H.add({ ...f, created: Date.now() }); return hdict(ref.id, f); });
 const updateHack = A(async ({ params, json }) => {
