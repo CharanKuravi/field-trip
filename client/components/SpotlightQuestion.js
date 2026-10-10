@@ -84,7 +84,7 @@ export default function SpotlightQuestion({
     }
   };
 
-  // Word wrapping helper
+  // Word wrapping helper - better wrapping for mobile
   const wrapText = (ctx, text, maxWidth) => {
     const words = text.split(' ');
     const lines = [];
@@ -108,13 +108,13 @@ export default function SpotlightQuestion({
   const drawContent = (ctx, width, height) => {
     // Responsive sizing based on canvas width
     const isMobile = width < 600;
-    const padding = isMobile ? 20 : 40;
-    const optionPadding = isMobile ? 12 : 20;
-    const lineHeight = isMobile ? 28 : 32;
-    const optionHeight = isMobile ? 80 : 70;
-    const optionSpacing = isMobile ? 10 : 15;
-    const questionFontSize = isMobile ? 20 : 26;
-    const optionFontSize = isMobile ? 16 : 19;
+    const padding = isMobile ? 25 : 40;
+    const optionPadding = isMobile ? 15 : 20;
+    const lineHeight = isMobile ? 30 : 32; // More line height for mobile
+    const optionHeight = isMobile ? 90 : 70; // Taller options
+    const optionSpacing = isMobile ? 12 : 15;
+    const questionFontSize = isMobile ? 22 : 26; // Slightly larger on mobile
+    const optionFontSize = isMobile ? 17 : 19;
 
     // Clear canvas with dark background
     ctx.fillStyle = spotlightConfig.backgroundColor;
@@ -126,18 +126,24 @@ export default function SpotlightQuestion({
     // Draw question text (bold, large, brighter)
     ctx.font = `bold ${questionFontSize}px sans-serif`;
     ctx.fillStyle = '#ffffff'; // Brighter white for question
-    const questionLines = wrapText(ctx, question.text, width - padding * 2);
+    const questionMaxWidth = width - padding * 2;
+    const questionLines = wrapText(ctx, question.text, questionMaxWidth);
     let y = padding;
+    
+    // Draw each line of question with proper spacing
     questionLines.forEach((line) => {
       ctx.fillText(line, padding, y);
       y += lineHeight;
     });
 
+    // Add extra space after question
+    y += isMobile ? 10 : 15;
+
     // Draw marks indicator
     ctx.font = `${isMobile ? 14 : 16}px sans-serif`;
     ctx.fillStyle = '#aaa';
-    ctx.fillText(`[${question.marks} mark${question.marks > 1 ? 's' : ''}]`, padding, y + 10);
-    y += isMobile ? 40 : 50;
+    ctx.fillText(`[${question.marks} mark${question.marks > 1 ? 's' : ''}]`, padding, y);
+    y += isMobile ? 50 : 50;
 
     // Draw options in grid (2x2 on desktop, 1 column on mobile)
     const options = question.options;
@@ -169,9 +175,13 @@ export default function SpotlightQuestion({
       // Draw option text (brighter)
       ctx.fillStyle = selectedOption === opt.key ? '#ffffff' : '#e8e8e8';
       const optionText = `${opt.key}) ${opt.text}`;
-      const optionLines = wrapText(ctx, optionText, gridWidth - optionPadding * 2);
+      const optionMaxWidth = gridWidth - optionPadding * 2;
+      const optionLines = wrapText(ctx, optionText, optionMaxWidth);
+      
+      // Draw each line of option text
       optionLines.forEach((line, idx) => {
-        ctx.fillText(line, x + optionPadding, y_pos + optionPadding + idx * (isMobile ? 22 : 24));
+        const lineY = y_pos + optionPadding + idx * (isMobile ? 24 : 24);
+        ctx.fillText(line, x + optionPadding, lineY);
       });
     }
 
@@ -269,8 +279,15 @@ export default function SpotlightQuestion({
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
     
+    // Set canvas size based on device
+    const isMobile = rect.width < 600;
+    const canvasHeight = isMobile ? Math.max(1000, window.innerHeight * 0.8) : 800;
+    
     canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
+    canvas.height = canvasHeight * dpr;
+    
+    // Set CSS height to match
+    canvas.style.height = `${canvasHeight}px`;
 
     const ctx = canvas.getContext('2d');
     ctx.scale(dpr, dpr);
@@ -286,8 +303,13 @@ export default function SpotlightQuestion({
     // Handle window resize
     const handleResize = () => {
       const rect = canvas.getBoundingClientRect();
+      const isMobile = rect.width < 600;
+      const canvasHeight = isMobile ? Math.max(1000, window.innerHeight * 0.8) : 800;
+      
       canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
+      canvas.height = canvasHeight * dpr;
+      canvas.style.height = `${canvasHeight}px`;
+      
       ctx.scale(dpr, dpr);
     };
 
@@ -332,7 +354,7 @@ export default function SpotlightQuestion({
   }, [canvasReady, question, selectedOption]);
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: 'auto', minHeight: '600px' }}>
+    <div style={{ position: 'relative', width: '100%', minHeight: '700px' }}>
       <canvas
         ref={canvasRef}
         onMouseMove={handlePointerMove}
@@ -340,11 +362,13 @@ export default function SpotlightQuestion({
         onTouchEnd={handleCanvasClick}
         style={{
           width: '100%',
-          height: '800px', // Taller for mobile to fit single-column options
-          maxHeight: '90vh',
+          height: '100%',
+          minHeight: '700px',
+          maxHeight: '95vh',
+          display: 'block',
           cursor: 'pointer',
-          touchAction: 'none', // Prevent default touch behaviors
-          background: spotlightConfig.backgroundColor, // Ensure background is always dark
+          touchAction: 'none',
+          background: spotlightConfig.backgroundColor,
         }}
       />
       
