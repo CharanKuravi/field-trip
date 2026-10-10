@@ -19,14 +19,10 @@ export default function Exam({ ex, onDone }) {
     timer: null, 
     hb: null,
     currentQuestion: 0,
-    questionTimers: ex.questions.map((q) => {
-      const subject = (q.subject || 'general').toLowerCase();
-      return subject === 'aws' ? 15 : subject === 'aptitude' || subject === 'apti' ? 27 : 27;
-    }),
-    questionTimeLeft: ex.questions.map((q) => {
-      const subject = (q.subject || 'general').toLowerCase();
-      return subject === 'aws' ? 15 : subject === 'aptitude' || subject === 'apti' ? 27 : 27;
-    })
+    // First 20 questions = AWS (15s), Last 10 = Aptitude (27s)
+    questionTimers: ex.questions.map((q, i) => i < 20 ? 15 : 27),
+    questionTimeLeft: ex.questions.map((q, i) => i < 20 ? 15 : 27),
+    answeredQuestions: new Set() // Track which questions have been answered
   };
   const [, setTick] = useState(0);
   const rerender = () => setTick((n) => n + 1);
@@ -51,7 +47,27 @@ export default function Exam({ ex, onDone }) {
     } catch {} finally { s.flushing = false; persist(); }
   }
 
-  function choose(qid, key) { const s = R.current; s.ans[qid] = key; s.pend.set(qid, key); persist(); flushAns(); }
+  function choose(qid, key) { 
+    const s = R.current; 
+    s.ans[qid] = key; 
+    s.pend.set(qid, key); 
+    persist(); 
+    flushAns(); 
+  }
+  
+  function markDone() {
+    const s = R.current;
+    const currentQ = ex.questions[s.currentQuestion];
+    if (s.ans[currentQ.id]) {
+      s.answeredQuestions.add(s.currentQuestion);
+      // Auto-advance to next unanswered question
+      if (s.currentQuestion < ex.questions.length - 1) {
+        s.currentQuestion += 1;
+        s.questionTimeLeft[s.currentQuestion] = s.questionTimers[s.currentQuestion];
+      }
+      rerender();
+    }
+  }
 
   async function finish() {
     const s = R.current;
@@ -202,6 +218,26 @@ export default function Exam({ ex, onDone }) {
                 {o.text}
               </label>
             ))}
+            
+            {/* Show Done button when answer is selected */}
+            {s.ans[currentQ.id] && !s.answeredQuestions.has(s.currentQuestion) && (
+              <div style={{ marginTop: 20 }}>
+                <button 
+                  onClick={markDone}
+                  style={{ 
+                    width: '100%', 
+                    padding: '14px',
+                    fontSize: 16,
+                    fontWeight: 'bold',
+                    background: '#4CAF50',
+                    color: 'white',
+                    border: '2px solid white'
+                  }}
+                >
+                  Done - Next Question →
+                </button>
+              </div>
+            )}
           </div>
         </div>
         
@@ -224,17 +260,17 @@ export default function Exam({ ex, onDone }) {
                 {ex.questions.slice(0, 20).map((q, i) => (
                   <button
                     key={q.id}
-                    onClick={() => { s.currentQuestion = i; rerender(); }}
-                    disabled={i > s.currentQuestion}
+                    onClick={() => { if (!s.answeredQuestions.has(i)) { s.currentQuestion = i; rerender(); } }}
+                    disabled={i > s.currentQuestion || s.answeredQuestions.has(i)}
                     style={{
                       padding: '10px 4px',
                       fontSize: 13,
                       fontWeight: i === s.currentQuestion ? 'bold' : 'normal',
-                      background: i === s.currentQuestion ? '#FF9800' : s.ans[q.id] ? '#4CAF50' : '#f5f5f5',
-                      color: i === s.currentQuestion || s.ans[q.id] ? 'white' : i > s.currentQuestion ? '#ccc' : '#333',
+                      background: s.answeredQuestions.has(i) ? '#2196F3' : i === s.currentQuestion ? '#FF9800' : s.ans[q.id] ? '#4CAF50' : '#f5f5f5',
+                      color: s.answeredQuestions.has(i) || i === s.currentQuestion || s.ans[q.id] ? 'white' : i > s.currentQuestion ? '#ccc' : '#333',
                       border: '2px solid white',
                       borderRadius: 4,
-                      cursor: i > s.currentQuestion ? 'not-allowed' : 'pointer',
+                      cursor: s.answeredQuestions.has(i) || i > s.currentQuestion ? 'not-allowed' : 'pointer',
                       opacity: i > s.currentQuestion ? 0.5 : 1
                     }}
                   >
@@ -255,17 +291,17 @@ export default function Exam({ ex, onDone }) {
                   return (
                     <button
                       key={q.id}
-                      onClick={() => { s.currentQuestion = actualIndex; rerender(); }}
-                      disabled={actualIndex > s.currentQuestion}
+                      onClick={() => { if (!s.answeredQuestions.has(actualIndex)) { s.currentQuestion = actualIndex; rerender(); } }}
+                      disabled={actualIndex > s.currentQuestion || s.answeredQuestions.has(actualIndex)}
                       style={{
                         padding: '10px 4px',
                         fontSize: 13,
                         fontWeight: actualIndex === s.currentQuestion ? 'bold' : 'normal',
-                        background: actualIndex === s.currentQuestion ? '#FF9800' : s.ans[q.id] ? '#4CAF50' : '#f5f5f5',
-                        color: actualIndex === s.currentQuestion || s.ans[q.id] ? 'white' : actualIndex > s.currentQuestion ? '#ccc' : '#333',
+                        background: s.answeredQuestions.has(actualIndex) ? '#2196F3' : actualIndex === s.currentQuestion ? '#FF9800' : s.ans[q.id] ? '#4CAF50' : '#f5f5f5',
+                        color: s.answeredQuestions.has(actualIndex) || actualIndex === s.currentQuestion || s.ans[q.id] ? 'white' : actualIndex > s.currentQuestion ? '#ccc' : '#333',
                         border: '2px solid white',
                         borderRadius: 4,
-                        cursor: actualIndex > s.currentQuestion ? 'not-allowed' : 'pointer',
+                        cursor: s.answeredQuestions.has(actualIndex) || actualIndex > s.currentQuestion ? 'not-allowed' : 'pointer',
                         opacity: actualIndex > s.currentQuestion ? 0.5 : 1
                       }}
                     >
@@ -279,7 +315,11 @@ export default function Exam({ ex, onDone }) {
             <div style={{ marginTop: 20, fontSize: 12, color: '#666', paddingTop: 16, borderTop: '2px solid white' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                 <div style={{ width: 16, height: 16, background: '#4CAF50', borderRadius: 2, border: '1px solid white' }}></div>
-                <span>Answered</span>
+                <span>Selected</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <div style={{ width: 16, height: 16, background: '#2196F3', borderRadius: 2, border: '1px solid white' }}></div>
+                <span>Completed</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                 <div style={{ width: 16, height: 16, background: '#FF9800', borderRadius: 2, border: '1px solid white' }}></div>
