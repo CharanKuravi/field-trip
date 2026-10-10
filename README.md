@@ -1,55 +1,157 @@
-# Proctor Tool - Next.js on Vercel + Firebase
+# AWS Codeathon Proctoring System
+
+A secure, scalable exam proctoring system built with Next.js and Firebase.
+
+## 🏗️ Project Structure
 
 ```
- students / admin ──> Vercel (apps/web, Next.js, static pages on a CDN)
-        │
-        └── fetch (Bearer token, CORS) ──> Firebase App Hosting (apps/api, Next.js route handlers on Cloud Run)
-                                                 ├── Firestore            all data (one document per participant)
-                                                 └── Upstash Redis        rate-limit counters only (shared across instances)
+proctor-next/
+├── client/          → Frontend (Deployed on Netlify)
+├── server/          → Backend REST API (Deployed on Render)
+├── loadtest/        → Load testing scripts
+├── AWS_100_QUESTIONS.csv
+├── QUESTION_UPLOAD_TEMPLATE.csv
+└── README.md
 ```
-Participants sign in with **email (username) + roll number (password)**. Admin adds them one by one or uploads **.xlsx / .csv**.
-Everything is Next.js (App Router, JavaScript). `apps/web` = frontend, `apps/api` = backend.
 
-## One-time setup (about 30-40 minutes)
+## 🚀 Live Deployment
 
-### 1. Firebase (backend + database)
-1. console.firebase.google.com → create a project → upgrade to the **Blaze (pay-as-you-go)** plan (App Hosting needs it; a 2,500-user event costs a few dollars - see ARCHITECTURE.md).
-2. **Build → Firestore Database → Create database** (production mode). Pick a region close to your students, e.g. `asia-south1` (Mumbai) for India. The region cannot be changed later.
-3. Deploy the rules + index: `npm i -g firebase-tools && firebase login && firebase use YOUR_PROJECT && firebase deploy --only firestore`
-   (rules block all browser access; the index powers the violation log).
-4. **Build → App Hosting → Get started**: connect your GitHub repo, set **root directory = `apps/api`**, same region as Firestore.
-5. Create the secrets (each prompts for a value; generate with `openssl rand -hex 32`):
-   ```bash
-   firebase apphosting:secrets:set PROCTOR_SECRET        # JWT signing key
-   firebase apphosting:secrets:set PROCTOR_PEPPER        # roll-number hash key - NEVER change after go-live
-   firebase apphosting:secrets:set PROCTOR_ADMIN_USER
-   firebase apphosting:secrets:set PROCTOR_ADMIN_PASS
-   firebase apphosting:secrets:set UPSTASH_REDIS_REST_URL
-   firebase apphosting:secrets:set UPSTASH_REDIS_REST_TOKEN
-   ```
-6. Edit `apps/api/apphosting.yaml`: set `ALLOWED_ORIGINS` to your Vercel URL, commit, push → App Hosting builds and gives you a URL like `https://proctor-api--YOUR-PROJECT.REGION.hosted.app`.
+- **Frontend**: https://aws-codeathon-proctor.netlify.app
+- **Backend API**: https://proctor-api-r44r.onrender.com
 
-### 2. Upstash (rate limiting)
-console.upstash.com → **Create Redis database** (Regional, same area as your backend) → copy the *REST URL* and *REST TOKEN* into the two secrets above.
-The free tier is too small for an event (10k commands/day); use pay-as-you-go for the event day.
+## 🎯 Features
 
-### 3. Vercel (frontend)
-Import the repo → **Root Directory = `apps/web`** → add env var `NEXT_PUBLIC_API_BASE` = your App Hosting URL → Deploy. Then put the final Vercel URL into `ALLOWED_ORIGINS` (step 1.6) and redeploy the API.
-Vercel serves static pages only, so the free Hobby plan is enough technically (Vercel's terms limit Hobby to non-commercial use).
+### For Participants
+- ✅ One question at a time display
+- ✅ Per-question timers (AWS: 15s, Aptitude: 27s)
+- ✅ Auto-advance when timer expires or "Done" clicked
+- ✅ Question locking after completion (can't go back)
+- ✅ Two sections: AWS Questions (1-20) & Aptitude Questions (21-30)
+- ✅ Real-time proctoring (fullscreen, tab switch detection)
+- ✅ Automatic violation tracking
 
-## Local development
+### For Admins (Hidden Access)
+- ✅ Click black dot at bottom-right corner to access admin panel
+- ✅ Create multiple hackathons/exams
+- ✅ Bulk upload participants via CSV/Excel
+- ✅ Bulk upload questions with subject tags (AWS/Aptitude)
+- ✅ Generate unique question papers (20 AWS + 10 Aptitude per student)
+- ✅ Real-time monitoring dashboard
+- ✅ Export questions as CSV
+- ✅ Revoke exam attempts for retakes
+- ✅ View violations and auto-submission logs
+
+## 📋 Question Upload Format
+
+CSV with 8 columns: `text,optA,optB,optC,optD,correct_key,marks,subject`
+
+Example:
+```csv
+What is AWS?,Option A,Option B,Option C,Option D,A,1,AWS
+Math question?,10,20,30,40,C,1,Aptitude
+```
+
+## 🔧 Local Development
+
+### Server (Backend)
 ```bash
-cd apps/api && cp .env.example .env.local && npm i && npm run dev      # http://localhost:4000  (needs a Firebase service-account JSON in FIREBASE_SERVICE_ACCOUNT)
-cd apps/web && cp .env.example .env.local && npm i && npm run dev      # http://localhost:3000   (NEXT_PUBLIC_API_BASE=http://localhost:4000)
-cd apps/api && npm test                                                # grading / shuffle / upload-parsing unit tests (no services needed)
+cd server
+cp .env.example .env.local
+# Add your Firebase credentials to .env.local
+npm install
+npm run dev
+# Runs on http://localhost:4000
 ```
 
-## Admin flow
-1. **+ Hackathon** → Settings. Leave *Open* unticked. 2. **Participants** (add / upload Excel or CSV) and **Questions**.
-3. Students log in early and wait on the instructions page (it unlocks by itself). 4. Tick **Open for participants**.
-5. **Monitor** shows live counts, search/filter, paging, violation log, CSV export. **Integrity** after the exam.
-Tip: keep the Monitor tab open during the exam - it also auto-submits anyone whose timer ran out and who closed their browser.
+### Client (Frontend)
+```bash
+cd client
+cp .env.example .env.local
+# Set NEXT_PUBLIC_API_BASE=http://localhost:4000
+npm install
+npm run dev
+# Runs on http://localhost:3000
+```
 
-## Before the event
-Run `loadtest/locustfile.py` (see its header) against the deployed API with 2,500 simulated students. Don't skip this.
-Set `minInstances` back to 0 afterwards. Use HTTPS only (Vercel and App Hosting both are) - fullscreen lock and second-monitor detection need it.
+## 🔐 Environment Variables
+
+### Server (.env.local)
+- `FIREBASE_SERVICE_ACCOUNT` - Firebase admin SDK credentials (JSON)
+- `PROCTOR_SECRET` - JWT signing key
+- `PROCTOR_PEPPER` - Password hashing salt
+- `PROCTOR_ADMIN_USER` - Admin username
+- `PROCTOR_ADMIN_PASS` - Admin password
+- `ALLOWED_ORIGINS` - Frontend URL for CORS
+
+### Client (.env.local)
+- `NEXT_PUBLIC_API_BASE` - Backend API URL
+
+## 📊 Load Testing
+
+```bash
+cd loadtest
+# Install locust: pip install locust
+# Run test: locust -f locustfile.py --host=https://proctor-api-r44r.onrender.com
+# Open http://localhost:8089 and configure test
+```
+
+## 🎨 UI Features
+
+- AWS logo with "- Codeathon" branding
+- White borders on all elements
+- Orange top border on current question
+- Color-coded question navigator:
+  - 🟢 Green: Answer selected (not yet done)
+  - 🔵 Blue: Completed and locked
+  - 🟠 Orange: Current question
+  - ⚪ White: Not answered
+  - ⚪ Faded: Locked (future questions)
+
+## 🛡️ Security Features
+
+- Real-time proctoring with violation tracking
+- Fullscreen enforcement
+- Tab switch detection
+- Auto-submission after max violations
+- JWT-based authentication
+- Rate limiting on API endpoints
+
+## 📝 Admin Workflow
+
+1. Access admin panel (click black dot at bottom-right)
+2. Login with admin credentials
+3. Create a hackathon
+4. Upload participants (CSV/Excel)
+5. Upload questions with subject tags
+6. Set exam as "Open for participants"
+7. Monitor live exam progress
+8. Export results and violations
+
+## 🎓 Exam Flow
+
+1. Student logs in with email + roll number
+2. Waits on instructions page until exam opens
+3. Exam starts with Section 1 (AWS - 20 questions, 15s each)
+4. Then Section 2 (Aptitude - 10 questions, 27s each)
+5. Questions auto-advance or click "Done" button
+6. Completed questions are locked (can't revisit)
+7. Auto-submit when time expires or all questions done
+8. After submission: shows violations count only (score hidden from participant)
+
+## 📦 Deployment
+
+### Backend (Render)
+- Root directory: `server`
+- Build command: `npm install`
+- Start command: `npm run start`
+- Add environment variables in Render dashboard
+
+### Frontend (Netlify)
+- Root directory: `client`
+- Build command: `npm run build`
+- Publish directory: `.next`
+- Add environment variables in Netlify dashboard
+
+## 📄 License
+
+Built for AWS Codeathon at GIST
