@@ -115,104 +115,183 @@ export default function Exam({ ex, onDone }) {
   const subject = (currentQ.subject || 'general').toLowerCase();
   const timeForQuestion = s.questionTimeLeft[s.currentQuestion];
   const isLowTime = timeForQuestion <= 5;
+  
+  // Determine current section
+  const isSection1 = s.currentQuestion < 20; // First 20 are AWS
+  const currentSection = isSection1 ? 1 : 2;
+  const sectionName = isSection1 ? 'AWS Questions' : 'Aptitude Questions';
 
   return (
     <div className={`exam${dim ? ' dim' : ''}`}>
       <div className="wm" style={{ backgroundImage: `url("data:image/svg+xml,${encodeURIComponent(wm)}")` }} />
-      <div className="bar">
-        <b>Question {s.currentQuestion + 1} of {ex.questions.length}</b>
-        <span>Answered <b>{answered}</b>/{ex.questions.length}</span>
-        <span className="mu">{s.pend.size ? 'Saving…' : '✓ Saved'}</span>
-        <span>Violations <span className="v">{s.violations}</span>/{ex.max_violations || '∞'}</span>
-        <span className="mono">{Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}</span>
-        <button onClick={() => { const un = ex.questions.length - answered; if (!un || confirm(`${un} unanswered. Submit anyway?`)) finish(); }}>Submit</button>
+      
+      {/* Top Bar with AWS Logo */}
+      <div className="bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <img src="https://aws-codeathon-at-gist-site.vercel.app/assets/aws-logo.png" alt="AWS" style={{ height: 32 }} />
+          <span style={{ fontSize: 18, fontWeight: 'bold' }}>- Codeathon</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          <span><b>Section {currentSection}</b> · Question {s.currentQuestion + 1} of {ex.questions.length}</span>
+          <span>Answered <b>{answered}</b>/{ex.questions.length}</span>
+          <span className="mu">{s.pend.size ? 'Saving…' : '✓ Saved'}</span>
+          <span>Violations <span className="v">{s.violations}</span>/{ex.max_violations || '∞'}</span>
+          <span className="mono">{Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}</span>
+          <button onClick={() => { const un = ex.questions.length - answered; if (!un || confirm(`${un} unanswered. Submit anyway?`)) finish(); }}>Submit</button>
+        </div>
       </div>
-      <div style={{ display: 'flex', gap: 16 }}>
+      
+      <div style={{ display: 'flex', gap: 16, padding: '0 20px 20px' }}>
         {/* Main question area */}
         <div className="wrap" style={{ flex: 1 }}>
-          <div className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <div style={{ fontSize: 20, fontWeight: 'bold' }}>
-                Question {s.currentQuestion + 1}
-                {subject !== 'general' && <span className="mu" style={{ marginLeft: 12, textTransform: 'capitalize', fontSize: 14 }}>({subject})</span>}
+          <div className="card" style={{ 
+            border: '2px solid white',
+            borderTop: '4px solid #FF9800',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              marginBottom: 16,
+              paddingBottom: 12,
+              borderBottom: '2px solid white'
+            }}>
+              <div style={{ fontSize: 18, fontWeight: 'bold', color: '#333' }}>
+                {sectionName} - Question {isSection1 ? s.currentQuestion + 1 : s.currentQuestion - 19}
               </div>
               <div style={{ 
-                padding: '8px 16px', 
-                borderRadius: 6, 
+                padding: '10px 20px', 
+                borderRadius: 8, 
                 background: isLowTime ? '#ff6b6b' : '#4CAF50',
                 color: 'white',
                 fontWeight: 'bold',
-                fontSize: 18,
-                minWidth: 70,
-                textAlign: 'center'
+                fontSize: 20,
+                minWidth: 80,
+                textAlign: 'center',
+                border: '2px solid white'
               }}>
                 {timeForQuestion}s
               </div>
             </div>
-            <div style={{ fontSize: 16, marginBottom: 20, lineHeight: 1.6 }}>{currentQ.text}</div>
-            <div style={{ fontSize: 14, color: '#666', marginBottom: 12 }}>[{currentQ.marks} mark{currentQ.marks > 1 ? 's' : ''}]</div>
+            <div style={{ fontSize: 17, marginBottom: 24, lineHeight: 1.8, color: '#222' }}>
+              {currentQ.text}
+            </div>
+            <div style={{ fontSize: 14, color: '#666', marginBottom: 16 }}>
+              [{currentQ.marks} mark{currentQ.marks > 1 ? 's' : ''}]
+            </div>
             {currentQ.options.map((o) => (
-              <label key={o.key} className={`opt${s.ans[currentQ.id] === o.key ? ' sel' : ''}`} style={{ fontSize: 15, padding: '12px 16px' }}>
-                <input type="radio" name={`q${currentQ.id}`} checked={s.ans[currentQ.id] === o.key} onChange={() => choose(currentQ.id, o.key)} style={{ marginRight: 12 }} />
+              <label 
+                key={o.key} 
+                className={`opt${s.ans[currentQ.id] === o.key ? ' sel' : ''}`} 
+                style={{ 
+                  fontSize: 16, 
+                  padding: '14px 18px',
+                  marginBottom: 10,
+                  border: '2px solid white',
+                  borderRadius: 6
+                }}
+              >
+                <input 
+                  type="radio" 
+                  name={`q${currentQ.id}`} 
+                  checked={s.ans[currentQ.id] === o.key} 
+                  onChange={() => choose(currentQ.id, o.key)} 
+                  style={{ marginRight: 12 }} 
+                />
                 {o.text}
               </label>
             ))}
-            <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
-              {s.currentQuestion > 0 && (
-                <button 
-                  className="sec"
-                  onClick={() => { s.currentQuestion -= 1; rerender(); }}
-                >
-                  ← Previous
-                </button>
-              )}
-              {s.currentQuestion < ex.questions.length - 1 && (
-                <button 
-                  onClick={() => { s.currentQuestion += 1; s.questionTimeLeft[s.currentQuestion + 1] = s.questionTimers[s.currentQuestion + 1]; rerender(); }}
-                >
-                  Next →
-                </button>
-              )}
-            </div>
           </div>
         </div>
         
         {/* Question navigator on right */}
-        <div style={{ width: 200, flexShrink: 0 }}>
-          <div className="card" style={{ position: 'sticky', top: 16 }}>
-            <h3 style={{ marginBottom: 12, fontSize: 16 }}>Questions</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
-              {ex.questions.map((q, i) => (
-                <button
-                  key={q.id}
-                  onClick={() => { s.currentQuestion = i; rerender(); }}
-                  style={{
-                    padding: '8px 4px',
-                    fontSize: 13,
-                    fontWeight: i === s.currentQuestion ? 'bold' : 'normal',
-                    background: i === s.currentQuestion ? '#FF9800' : s.ans[q.id] ? '#4CAF50' : '#f5f5f5',
-                    color: i === s.currentQuestion || s.ans[q.id] ? 'white' : '#333',
-                    border: i === s.currentQuestion ? '2px solid #FF9800' : 'none',
-                    borderRadius: 4,
-                    cursor: 'pointer'
-                  }}
-                >
-                  {i + 1}
-                </button>
-              ))}
+        <div style={{ width: 240, flexShrink: 0 }}>
+          <div className="card" style={{ 
+            position: 'sticky', 
+            top: 16,
+            border: '2px solid white',
+            borderTop: '4px solid #FF9800'
+          }}>
+            <h3 style={{ marginBottom: 16, fontSize: 16, fontWeight: 'bold' }}>Question Navigator</h3>
+            
+            {/* Section 1: AWS Questions */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 13, fontWeight: 'bold', marginBottom: 8, color: '#666' }}>
+                Section 1: AWS (1-20)
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
+                {ex.questions.slice(0, 20).map((q, i) => (
+                  <button
+                    key={q.id}
+                    onClick={() => { s.currentQuestion = i; rerender(); }}
+                    disabled={i > s.currentQuestion}
+                    style={{
+                      padding: '10px 4px',
+                      fontSize: 13,
+                      fontWeight: i === s.currentQuestion ? 'bold' : 'normal',
+                      background: i === s.currentQuestion ? '#FF9800' : s.ans[q.id] ? '#4CAF50' : '#f5f5f5',
+                      color: i === s.currentQuestion || s.ans[q.id] ? 'white' : i > s.currentQuestion ? '#ccc' : '#333',
+                      border: '2px solid white',
+                      borderRadius: 4,
+                      cursor: i > s.currentQuestion ? 'not-allowed' : 'pointer',
+                      opacity: i > s.currentQuestion ? 0.5 : 1
+                    }}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div style={{ marginTop: 16, fontSize: 12, color: '#666' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                <div style={{ width: 16, height: 16, background: '#4CAF50', borderRadius: 2 }}></div>
+            
+            {/* Section 2: Aptitude Questions */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 'bold', marginBottom: 8, color: '#666' }}>
+                Section 2: Aptitude (21-30)
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
+                {ex.questions.slice(20, 30).map((q, i) => {
+                  const actualIndex = i + 20;
+                  return (
+                    <button
+                      key={q.id}
+                      onClick={() => { s.currentQuestion = actualIndex; rerender(); }}
+                      disabled={actualIndex > s.currentQuestion}
+                      style={{
+                        padding: '10px 4px',
+                        fontSize: 13,
+                        fontWeight: actualIndex === s.currentQuestion ? 'bold' : 'normal',
+                        background: actualIndex === s.currentQuestion ? '#FF9800' : s.ans[q.id] ? '#4CAF50' : '#f5f5f5',
+                        color: actualIndex === s.currentQuestion || s.ans[q.id] ? 'white' : actualIndex > s.currentQuestion ? '#ccc' : '#333',
+                        border: '2px solid white',
+                        borderRadius: 4,
+                        cursor: actualIndex > s.currentQuestion ? 'not-allowed' : 'pointer',
+                        opacity: actualIndex > s.currentQuestion ? 0.5 : 1
+                      }}
+                    >
+                      {actualIndex + 1}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            
+            <div style={{ marginTop: 20, fontSize: 12, color: '#666', paddingTop: 16, borderTop: '2px solid white' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <div style={{ width: 16, height: 16, background: '#4CAF50', borderRadius: 2, border: '1px solid white' }}></div>
                 <span>Answered</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                <div style={{ width: 16, height: 16, background: '#FF9800', borderRadius: 2 }}></div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <div style={{ width: 16, height: 16, background: '#FF9800', borderRadius: 2, border: '1px solid white' }}></div>
                 <span>Current</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ width: 16, height: 16, background: '#f5f5f5', border: '1px solid #ddd', borderRadius: 2 }}></div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <div style={{ width: 16, height: 16, background: '#f5f5f5', border: '2px solid white', borderRadius: 2 }}></div>
                 <span>Not answered</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 16, height: 16, background: '#f5f5f5', border: '2px solid white', borderRadius: 2, opacity: 0.5 }}></div>
+                <span>Locked</span>
               </div>
             </div>
           </div>
