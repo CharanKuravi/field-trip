@@ -25,11 +25,31 @@ export default function Participant({ onLogout }) {
   async function begin() {
     setErr(''); setStarting(true);
     try {
-      if (typeof window !== 'undefined' && window.screen && window.screen.isExtended) throw new Error('Multiple displays detected. Disconnect or disable extra monitors, then try again.');
-      await Promise.resolve(Proctor.enterFullscreen()).catch(() => {});
+      if (typeof window !== 'undefined' && window.screen && window.screen.isExtended) {
+        throw new Error('Multiple displays detected. Disconnect or disable extra monitors, then try again.');
+      }
+      
+      // Request fullscreen
+      try {
+        await Proctor.enterFullscreen();
+        // Wait a bit for fullscreen to take effect
+        await new Promise(resolve => setTimeout(resolve, 500));
+      } catch (fsError) {
+        throw new Error('Fullscreen is required to start the exam. Please allow fullscreen mode.');
+      }
+      
+      // Verify fullscreen is active
+      const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
+      if (!isFullscreen) {
+        throw new Error('Failed to enter fullscreen. Please allow fullscreen mode and try again.');
+      }
+      
       setEx(await api('/exam/start', { method: 'POST', retries: 6 }));
-    } catch (e) { setErr(e.message); }
-    finally { setStarting(false); }
+    } catch (e) { 
+      setErr(e.message); 
+    } finally { 
+      setStarting(false); 
+    }
   }
 
   if (ex) return <Exam ex={ex} onDone={() => { setEx(null); setMe(null); load(); }} />;
